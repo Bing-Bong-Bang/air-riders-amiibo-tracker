@@ -6,6 +6,8 @@ name: Release
 on:
   push:
     tags: ["v*"]
+    # Dry run: pushing this branch builds every app but publishes nothing.
+    branches: [release-test]
   workflow_dispatch:
 
 permissions:
