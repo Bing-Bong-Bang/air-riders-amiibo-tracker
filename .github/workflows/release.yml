@@ -1,13 +1,14 @@
 name: Release
 
-# Push a version tag (e.g. `git tag v0.1.0 && git push origin v0.1.0`) and this
-# builds the desktop app for Windows, macOS and Linux plus the single-file
-# HTML, then publishes them all as a GitHub Release.
+# Builds the desktop app for Windows, macOS and Linux plus the single-file
+# HTML, then publishes them all as a GitHub Release. Two ways to release:
+#   - push a version tag:  git tag v0.1.0 && git push origin v0.1.0
+#   - push to the `release` branch: the tag is made from package.json's version
+# Pushing to `release-test` builds everything but publishes nothing.
 on:
   push:
     tags: ["v*"]
-    # Dry run: pushing this branch builds every app but publishes nothing.
-    branches: [release-test]
+    branches: [release, release-test]
   workflow_dispatch:
 
 permissions:
@@ -53,10 +54,16 @@ jobs:
   publish:
     name: Publish release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Work out the version tag
+        id: version
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then tag="${GITHUB_REF_NAME}"; else tag="v$(node -p "require('./package.json').version")"; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Releasing $tag"
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -77,11 +84,14 @@ jobs:
             echo ""
             echo "The app isn't code-signed, so Windows may show \"Windows protected your PC\" (click **More info → Run anyway**) and macOS may say it can't verify the developer (right-click the app → **Open**)."
             echo ""
-            awk "/^## \[${GITHUB_REF_NAME#v}\]/{flag=1;next}/^## \[/{flag=0}flag" CHANGELOG.md
+            tag="${{ steps.version.outputs.tag }}"
+            awk "/^## \[${tag#v}\]/{flag=1;next}/^## \[/{flag=0}flag" CHANGELOG.md
           } > notes.md
           cat notes.md
       - uses: softprops/action-gh-release@v2
         with:
-          name: Air Riders Stat Tracker ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Air Riders Stat Tracker ${{ steps.version.outputs.tag }}
           body_path: notes.md
           files: artifacts/*

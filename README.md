@@ -128,14 +128,14 @@ npm run dev          # opens a dev server at http://localhost:5173
 
 ### Releasing
 
-Bump `version` in `package.json`, add a section to [`CHANGELOG.md`](CHANGELOG.md), then tag:
+Bump `version` in `package.json`, add a section to [`CHANGELOG.md`](CHANGELOG.md), then either tag it:
 
 ```bash
 git tag v0.2.0
 git push origin v0.2.0
 ```
 
-The [Release workflow](.github/workflows/release.yml) builds Windows, macOS and Linux apps plus the single-file HTML on GitHub's machines and publishes them as a GitHub Release.
+or push to the `release` branch (`git push origin main:release`), and the workflow makes the tag from `package.json`. The [Release workflow](.github/workflows/release.yml) builds Windows, macOS and Linux apps plus the single-file HTML on GitHub's machines and publishes them as a GitHub Release. Pushing to `release-test` runs the same builds without publishing.
 
 ### How it's built
 
