@@ -1,0 +1,108 @@
+{
+  "name": "air-riders-amiibo-tracker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Find the fastest Kirby Air Riders amiibo setups: log races, City Trial matches and stadiums, and get honest, uncertainty-aware rankings.",
+  "author": {
+    "name": "Air Riders Stat Tracker contributors"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Bing-Bong-Bang/air-riders-amiibo-tracker",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Bing-Bong-Bang/air-riders-amiibo-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Bing-Bong-Bang/air-riders-amiibo-tracker/issues"
+  },
+  "type": "module",
+  "main": "electron/main.cjs",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:single": "npm run build && node scripts/build-single.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "app": "npm run build:single && electron .",
+    "dist": "npm run build:single && electron-builder --publish never"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0"
+  },
+  "build": {
+    "appId": "io.github.airriders.stattracker",
+    "productName": "Air Riders Stat Tracker",
+    "artifactName": "Air-Riders-Stat-Tracker-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist-single/index.html",
+      "electron/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "Air-Riders-Stat-Tracker-${version}-portable.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Air-Riders-Stat-Tracker-${version}-setup.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.games",
+      "identity": null
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Game",
+      "maintainer": "Air Riders Stat Tracker contributors <noreply@users.noreply.github.com>"
+    }
+  }
+}
