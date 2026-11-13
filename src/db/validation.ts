@@ -112,6 +112,7 @@ export const profileSchema: z.ZodType<FigurePlayerProfile> = z.object({
   trainingGoal: z.string().optional(),
   isBaseline: z.boolean().optional(),
   swordKirby: z.boolean().optional(),
+  kirbyColor: z.string().max(40).optional(),
   machineProficiency: z.record(z.number().int().min(0).max(100)).optional(),
   status: z.enum(["active", "retired"]),
   retiredAt: iso.optional(),

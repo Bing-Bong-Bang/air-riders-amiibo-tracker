@@ -9,7 +9,7 @@
 // Each problem is returned as a plain-English sentence.
 // =============================================================
 
-import { maxRidersFor, sameFigure } from "../domain/schema";
+import { kirbyColors, maxRidersFor, sameFigure } from "../domain/schema";
 import type {
   AmiiboFigure, AmiiboMachineFigure, Experiment, ExportFile, FigurePlayerProfile,
   FigurePlayerSnapshot, Format, ID, IncidentTag, Machine, Player, Race, Racer, Rider, Run,
@@ -274,6 +274,7 @@ export function checkIntegrity(data: Dataset): string[] {
   for (const p of data.figurePlayerProfiles) {
     if (!L.riders.has(p.riderId)) add(`Amiibo "${p.nickname}" points at a missing rider.`);
     else if (p.swordKirby && L.riders.get(p.riderId)?.characterGroup !== "Kirby") add(`Amiibo "${p.nickname}" is marked as a Sword Kirby figure but isn't a Kirby.`);
+    else if (p.kirbyColor && !kirbyColors(L.riders.get(p.riderId)).includes(p.kirbyColor)) add(`Amiibo "${p.nickname}" is set to ${p.kirbyColor}, which doesn't match its Kirby special.`);
     if (p.figureId) {
       const fig = L.figures.get(p.figureId);
       if (!fig) add(`Amiibo "${p.nickname}" points at a missing figure.`);

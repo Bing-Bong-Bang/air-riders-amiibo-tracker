@@ -2,7 +2,8 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { getAll } from "../db/database";
 import { createProfile, setProfileStatus, updateProfile } from "../db/repo";
-import type { FigurePlayerProfile, FigurePlayerSnapshot, ID } from "../domain/schema";
+import { kirbyColors } from "../domain/schema";
+import type { FigurePlayerProfile, FigurePlayerSnapshot, ID, Rider } from "../domain/schema";
 import { useLiveQuery } from "../hooks/useLiveQuery";
 import { snapshotLabel, useReference } from "../hooks/useReference";
 import type { Reference } from "../hooks/useReference";
@@ -23,9 +24,32 @@ interface ProfileDraft {
   notes: string;
   isBaseline: boolean;
   swordKirby: boolean;
+  kirbyColor: string;
 }
 
-function ProfileFields({ d, set, idPrefix, isKirby }: { d: ProfileDraft; set: (d: ProfileDraft) => void; idPrefix: string; isKirby: boolean }) {
+const KIRBY = "__kirby__";
+
+/** Every Kirby color with the rider (special) it gives, in roster order. */
+function kirbyColorOptions(riders: Rider[]): { color: string; rider: Rider }[] {
+  return riders.flatMap(r => kirbyColors(r).map(color => ({ color, rider: r })));
+}
+
+/** "Crash" from "Kirby (Crash)". */
+const specialName = (r: Rider) => /\(([^)]+)\)/.exec(r.name)?.[1] ?? r.name;
+
+function SwordKirbyBox({ d, set }: { d: ProfileDraft; set: (d: ProfileDraft) => void }) {
+  return (
+    <Checkbox
+      checked={d.swordKirby}
+      onChange={v => set({ ...d, swordKirby: v })}
+      label="Sword Kirby figure"
+      hint="Same as a Kirby amiibo, just with a hat. It races and counts as its color."
+    />
+  );
+}
+
+function ProfileFields({ d, set, idPrefix, kirbyRider }: { d: ProfileDraft; set: (d: ProfileDraft) => void; idPrefix: string; kirbyRider?: Rider }) {
+  const colors = kirbyColors(kirbyRider);
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -36,14 +60,18 @@ function ProfileFields({ d, set, idPrefix, isKirby }: { d: ProfileDraft; set: (d
           <TextInput id={`${idPrefix}-personality`} value={d.personality} onChange={e => set({ ...d, personality: e.target.value })} />
         </Field>
       </div>
-      {isKirby && (
-        <div className="rounded-xl border border-night-700 p-3">
-          <Checkbox
-            checked={d.swordKirby}
-            onChange={v => set({ ...d, swordKirby: v })}
-            label="Sword Kirby figure"
-            hint="It races exactly like a Kirby amiibo, just with a hat, so its results count as that Kirby color. Pick the color it's set to in-game as the rider."
-          />
+      {kirbyRider && (
+        <div className="space-y-3 rounded-xl border border-night-700 p-3">
+          {colors.length > 1 && (
+            <Field label="Color" htmlFor={`${idPrefix}-color`} className="sm:max-w-xs"
+              hint={`Both give ${specialName(kirbyRider)}. A different special would mean a different rider, so that can't be changed here.`}>
+              <Select id={`${idPrefix}-color`} value={d.kirbyColor} onChange={e => set({ ...d, kirbyColor: e.target.value })}>
+                <option value="">Not set</option>
+                {colors.map(c => <option key={c} value={c}>{c}</option>)}
+              </Select>
+            </Field>
+          )}
+          <SwordKirbyBox d={d} set={set} />
         </div>
       )}
       <div className="rounded-xl border border-night-700 p-3">
@@ -64,25 +92,37 @@ function ProfileFields({ d, set, idPrefix, isKirby }: { d: ProfileDraft; set: (d
   );
 }
 
+/** "Kirby · Green (Crash) · Sword Kirby figure", or just the rider's name. */
+function riderLabel(rider: Rider | undefined, profile: FigurePlayerProfile): string {
+  if (!rider) return "Unknown rider";
+  if (rider.characterGroup !== "Kirby") return rider.name;
+  const colors = kirbyColors(rider);
+  const color = profile.kirbyColor ?? (colors.length === 1 ? colors[0] : colors.join(" or "));
+  return `Kirby · ${color} (${specialName(rider)})${profile.swordKirby ? " · Sword Kirby figure" : ""}`;
+}
+
 // -------------------------------------------------------------
 // New amiibo
 // -------------------------------------------------------------
 
 function NewProfileForm({ ref_, onDone }: { ref_: Reference; onDone: () => void }) {
-  const [riderId, setRiderId] = useState("");
-  const [d, setD] = useState<ProfileDraft>({ nickname: "", personality: "", trainingGoal: "", notes: "", isBaseline: false, swordKirby: false });
-  const isKirby = ref_.riderById.get(riderId)?.characterGroup === "Kirby";
+  const [pick, setPick] = useState("");          // a rider id, or KIRBY
+  const [d, setD] = useState<ProfileDraft>({ nickname: "", personality: "", trainingGoal: "", notes: "", isBaseline: false, swordKirby: false, kirbyColor: "" });
+  const isKirby = pick === KIRBY;
+  const kirbyOpts = kirbyColorOptions(ref_.riders);
+  const riderId = isKirby ? (kirbyOpts.find(o => o.color === d.kirbyColor)?.rider.id ?? "") : pick;
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (isKirby && !riderId) return setError(new Error("Pick the color your Kirby is set to."));
     if (!riderId) return setError(new Error("Pick which rider this amiibo is."));
     if (!d.nickname.trim()) return setError(new Error("Give the amiibo its in-game name."));
     setBusy(true);
     try {
-      await createProfile({ riderId, ...d, swordKirby: isKirby && d.swordKirby });
+      await createProfile({ riderId, ...d, swordKirby: isKirby && d.swordKirby, kirbyColor: isKirby ? d.kirbyColor : undefined });
       onDone();
     } catch (err) {
       setError(err);
@@ -95,14 +135,25 @@ function NewProfileForm({ ref_, onDone }: { ref_: Reference; onDone: () => void 
     <Card className="border-air-500/40">
       <form onSubmit={submit} className="space-y-5">
         <CardHeader title="New amiibo" subtitle="Assumed fully trained: level 50 and maxed on every machine. You can lower machine proficiency on its card later." />
-        <Field label="Rider" htmlFor="np-rider" className="sm:max-w-sm"
-          hint={ref_.riderById.get(riderId)?.amiiboFigure === "Kirby" ? "Kirby's color decides its special." : undefined}>
-          <Select id="np-rider" value={riderId} onChange={e => setRiderId(e.target.value)}>
+        <Field label="Rider" htmlFor="np-rider" className="sm:max-w-sm">
+          <Select id="np-rider" value={pick} onChange={e => setPick(e.target.value)}>
             <option value="">Choose…</option>
-            {ref_.riders.map(r => <option key={r.id} value={r.id}>{r.name}{r.amiiboFigure === "Kirby" && r.description ? ` · ${r.description}` : ""}</option>)}
+            {kirbyOpts.length > 0 && <option value={KIRBY}>Kirby</option>}
+            {ref_.riders.filter(r => r.characterGroup !== "Kirby").map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
           </Select>
         </Field>
-        <ProfileFields d={d} set={setD} idPrefix="np" isKirby={isKirby} />
+        {isKirby && (
+          <div className="space-y-3 rounded-xl border border-night-700 p-3">
+            <Field label="Color" htmlFor="np-color" className="sm:max-w-sm" hint="The color it's set to in-game. The color decides Kirby's special.">
+              <Select id="np-color" value={d.kirbyColor} onChange={e => setD({ ...d, kirbyColor: e.target.value })}>
+                <option value="">Choose…</option>
+                {kirbyOpts.map(o => <option key={o.color} value={o.color}>{o.color} · {specialName(o.rider)}</option>)}
+              </Select>
+            </Field>
+            <SwordKirbyBox d={d} set={setD} />
+          </div>
+        )}
+        <ProfileFields d={d} set={setD} idPrefix="np" />
         <SaveErrorNotice error={error} />
         <div className="flex gap-2">
           <Button type="submit" variant="primary" disabled={busy}>{busy ? "Saving…" : "Save amiibo"}</Button>
@@ -117,10 +168,12 @@ function NewProfileForm({ ref_, onDone }: { ref_: Reference; onDone: () => void 
 // One amiibo
 // -------------------------------------------------------------
 
-function EditProfileForm({ profile, latest, isKirby, onDone }: { profile: FigurePlayerProfile; latest: FigurePlayerSnapshot | undefined; isKirby: boolean; onDone: () => void }) {
+function EditProfileForm({ profile, latest, kirbyRider, onDone }: { profile: FigurePlayerProfile; latest: FigurePlayerSnapshot | undefined; kirbyRider?: Rider; onDone: () => void }) {
+  const isKirby = !!kirbyRider;
   const [d, setD] = useState<ProfileDraft>({
     nickname: profile.nickname, personality: profile.personality ?? "", trainingGoal: profile.trainingGoal ?? "", notes: profile.notes ?? "",
     isBaseline: !!profile.isBaseline, swordKirby: !!profile.swordKirby,
+    kirbyColor: profile.kirbyColor ?? (kirbyColors(kirbyRider).length === 1 ? kirbyColors(kirbyRider)[0] : ""),
   });
   const [startVersion, setStartVersion] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -136,7 +189,7 @@ function EditProfileForm({ profile, latest, isKirby, onDone }: { profile: Figure
     setError(null);
     const change = `Retrained: personality ${before.trim() || "not set"} → ${d.personality.trim() || "not set"}`;
     try {
-      await updateProfile(profile.id, { ...d, swordKirby: isKirby && d.swordKirby }, personalityChanged && startVersion ? { trainingSinceLast: change } : undefined);
+      await updateProfile(profile.id, { ...d, swordKirby: isKirby && d.swordKirby, kirbyColor: isKirby ? d.kirbyColor : undefined }, personalityChanged && startVersion ? { trainingSinceLast: change } : undefined);
       onDone();
     } catch (err) {
       setError(err);
@@ -146,7 +199,7 @@ function EditProfileForm({ profile, latest, isKirby, onDone }: { profile: Figure
   };
   return (
     <form onSubmit={submit} className="mt-4 space-y-4 rounded-xl border border-night-700 p-4">
-      <ProfileFields d={d} set={setD} idPrefix={`ep-${profile.id}`} isKirby={isKirby} />
+      <ProfileFields d={d} set={setD} idPrefix={`ep-${profile.id}`} kirbyRider={kirbyRider} />
       {personalityChanged && (
         <div className="rounded-xl border border-star-400/30 bg-star-400/5 p-3">
           <Checkbox
@@ -220,7 +273,7 @@ function ProfileCard({ profile, ref_, raceCounts }: {
             <Link to="stats" params={{ profile: profile.id }} className="hover:text-air-400" title={`Open ${profile.nickname}'s stats`}>{profile.nickname}</Link>
           </h2>
           <p className="text-sm text-night-300">
-            {rider?.name ?? "Unknown rider"}{profile.swordKirby && " · Sword Kirby figure"} · <Link to="stats" params={{ profile: profile.id }} className="text-air-400 hover:underline">View stats →</Link>
+            {riderLabel(rider, profile)} · <Link to="stats" params={{ profile: profile.id }} className="text-air-400 hover:underline">View stats →</Link>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -255,7 +308,7 @@ function ProfileCard({ profile, ref_, raceCounts }: {
       </div>
       <div className="mt-3"><SaveErrorNotice error={error} /></div>
 
-      {panel === "edit" && <EditProfileForm profile={profile} latest={latest} isKirby={rider?.characterGroup === "Kirby"} onDone={() => setPanel("none")} />}
+      {panel === "edit" && <EditProfileForm profile={profile} latest={latest} kirbyRider={rider?.characterGroup === "Kirby" ? rider : undefined} onDone={() => setPanel("none")} />}
       {panel === "retire" && !retired && (
         <RetireConfirm profile={profile} totalRaces={raceCounts.air_ride + raceCounts.top_ride} onCancel={() => setPanel("none")} />
       )}

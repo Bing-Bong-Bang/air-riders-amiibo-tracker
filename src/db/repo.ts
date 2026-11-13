@@ -7,7 +7,7 @@
 // nothing is written.
 // =============================================================
 
-import { computeGaps } from "../domain/schema";
+import { computeGaps, kirbyColors } from "../domain/schema";
 import type {
   FigurePlayerProfile, FigurePlayerSnapshot, Format, ID, Race, Run, Session, TestSet, TrackedMode,
 } from "../domain/schema";
@@ -65,6 +65,8 @@ export interface ProfileInput {
   isBaseline?: boolean;
   /** Kirby only: scanned from the Sword Kirby figure. */
   swordKirby?: boolean;
+  /** Kirby only: the exact in-game color, e.g. "Green". */
+  kirbyColor?: string;
 }
 
 export interface SnapshotInput {
@@ -107,6 +109,7 @@ export async function createProfile(input: ProfileInput, first: SnapshotInput = 
       notes: clean(input.notes),
       isBaseline: input.isBaseline || undefined,
       swordKirby: (input.swordKirby && rider.characterGroup === "Kirby") || undefined,
+      kirbyColor: kirbyColors(rider).includes(input.kirbyColor ?? "") ? input.kirbyColor : undefined,
       status: "active",
     });
     await tx.put("figurePlayerProfiles", profile);
@@ -123,7 +126,7 @@ export async function createProfile(input: ProfileInput, first: SnapshotInput = 
 export async function updateProfile(
   id: ID, patch: Omit<ProfileInput, "riderId">, newVersion?: SnapshotInput,
 ): Promise<void> {
-  await runWrite(["figurePlayerProfiles", "figurePlayerSnapshots"], async tx => {
+  await runWrite(["figurePlayerProfiles", "figurePlayerSnapshots", "riders"], async tx => {
     const existing = await tx.get("figurePlayerProfiles", id);
     if (!existing) throw new SaveError(["That amiibo no longer exists."]);
     if (newVersion) {
@@ -132,6 +135,9 @@ export async function updateProfile(
       await tx.put("figurePlayerSnapshots", buildSnapshot(id, next, newVersion));
     }
     if (existing.status === "active") assertUniqueNickname(patch.nickname, await tx.getAll("figurePlayerProfiles"), id);
+    if (patch.kirbyColor && !kirbyColors(await tx.get("riders", existing.riderId)).includes(patch.kirbyColor)) {
+      throw new SaveError([`${patch.kirbyColor} doesn't match this Kirby's special.`]);
+    }
     await tx.put("figurePlayerProfiles", parseOrThrow(profileSchema, {
       ...existing,
       nickname: patch.nickname.trim(),
@@ -140,6 +146,7 @@ export async function updateProfile(
       notes: clean(patch.notes),
       isBaseline: patch.isBaseline || undefined,
       swordKirby: patch.swordKirby || undefined,
+      kirbyColor: patch.kirbyColor || undefined,
       updatedAt: nowIso(),
     }));
   });

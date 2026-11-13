@@ -12,7 +12,7 @@ How to use every part of Air Riders Stat Tracker. For what the app is and how to
 ## Getting started
 
 1. **Pick a mode** with the switch at the top right: *Air Ride*, *Top Ride* or *City Trial*. Each mode has its own pages and its own data. *Amiibo* and *Data* are shared by all three.
-2. **Add your amiibo** on the **Amiibo** page: pick the rider (for Kirby, the color, which sets its special), then enter its in-game name and personality. For the Sword Kirby figure, pick its Kirby color and tick *Sword Kirby figure*: it races exactly like a Kirby amiibo.
+2. **Add your amiibo** on the **Amiibo** page: pick the rider, then enter its in-game name and personality. For **Kirby**, also pick the color it's set to (the color decides its special), and tick *Sword Kirby figure* if it's that figure: it races exactly like a Kirby amiibo, just with a hat.
 3. **Set up a save file** on the **Data** page (recommended): *Choose save file…*, then pick somewhere like `Documents/air-riders-data.json`. Every change is written there automatically.
 4. **Log races** (Air Ride / Top Ride) or **matches** (City Trial). The overview pages fill in as data arrives, and say what unlocks each section.
 

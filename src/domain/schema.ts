@@ -172,6 +172,12 @@ export interface Rider extends BaseRecord {
   notes?: string;
 }
 
+/** The in-game colors that give this Kirby rider its special, e.g. ["Yellow", "Green"]. Empty for non-Kirby riders. */
+export function kirbyColors(rider: { characterGroup?: string; description?: string } | undefined): string[] {
+  if (rider?.characterGroup !== "Kirby" || !rider.description) return [];
+  return rider.description.split(/\s+or\s+/).map(c => c.trim()).filter(Boolean);
+}
+
 /** Can an amiibo trained as rider `a` race as rider `b`? (Same figure, e.g. another Kirby color.) */
 export function sameFigure(a: Rider | undefined, b: Rider | undefined): boolean {
   if (!a || !b) return false;
@@ -257,6 +263,12 @@ export interface FigurePlayerProfile extends BaseRecord {
    * stats treat it as that Kirby.
    */
   swordKirby?: boolean;
+  /**
+   * Kirby only: the exact color it's set to in-game, e.g. "Green". The
+   * rider already says the special (Crash = Yellow or Green); this just
+   * remembers which of the two.
+   */
+  kirbyColor?: string;
   /**
    * Machine proficiency, 0–100, by City Trial machine id. Missing
    * machines (or no map at all) are maxed at 100.
