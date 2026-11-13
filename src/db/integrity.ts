@@ -273,6 +273,7 @@ export function checkIntegrity(data: Dataset): string[] {
   for (const f of data.amiiboMachineFigures) if (!L.machines.has(f.machineId)) add(`Machine figure "${f.label}" points at a missing machine.`);
   for (const p of data.figurePlayerProfiles) {
     if (!L.riders.has(p.riderId)) add(`Amiibo "${p.nickname}" points at a missing rider.`);
+    else if (p.swordKirby && L.riders.get(p.riderId)?.characterGroup !== "Kirby") add(`Amiibo "${p.nickname}" is marked as a Sword Kirby figure but isn't a Kirby.`);
     if (p.figureId) {
       const fig = L.figures.get(p.figureId);
       if (!fig) add(`Amiibo "${p.nickname}" points at a missing figure.`);

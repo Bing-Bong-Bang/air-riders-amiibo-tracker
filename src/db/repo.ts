@@ -63,6 +63,8 @@ export interface ProfileInput {
   trainingGoal?: string;
   notes?: string;
   isBaseline?: boolean;
+  /** Kirby only: scanned from the Sword Kirby figure. */
+  swordKirby?: boolean;
 }
 
 export interface SnapshotInput {
@@ -93,7 +95,8 @@ function buildSnapshot(profileId: ID, version: number, input: SnapshotInput): Fi
 /** Create an amiibo profile together with its first version (v1). */
 export async function createProfile(input: ProfileInput, first: SnapshotInput = {}): Promise<FigurePlayerProfile> {
   return runWrite(["figurePlayerProfiles", "figurePlayerSnapshots", "riders"], async tx => {
-    if (!(await tx.get("riders", input.riderId))) throw new SaveError(["Pick a rider."]);
+    const rider = await tx.get("riders", input.riderId);
+    if (!rider) throw new SaveError(["Pick a rider."]);
     assertUniqueNickname(input.nickname, await tx.getAll("figurePlayerProfiles"));
     const profile = parseOrThrow(profileSchema, {
       ...newRecordBase(),
@@ -103,6 +106,7 @@ export async function createProfile(input: ProfileInput, first: SnapshotInput = 
       trainingGoal: clean(input.trainingGoal),
       notes: clean(input.notes),
       isBaseline: input.isBaseline || undefined,
+      swordKirby: (input.swordKirby && rider.characterGroup === "Kirby") || undefined,
       status: "active",
     });
     await tx.put("figurePlayerProfiles", profile);
@@ -135,6 +139,7 @@ export async function updateProfile(
       trainingGoal: clean(patch.trainingGoal),
       notes: clean(patch.notes),
       isBaseline: patch.isBaseline || undefined,
+      swordKirby: patch.swordKirby || undefined,
       updatedAt: nowIso(),
     }));
   });

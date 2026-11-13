@@ -2,6 +2,11 @@
 
 All notable changes are listed here. Versions follow [semantic versioning](https://semver.org).
 
+## [Unreleased]
+
+### Changed
+- **Sword Kirby is no longer a separate character.** The released figure races exactly like a Kirby amiibo (it just adds a hat), so it's now a *Sword Kirby figure* checkbox on Kirby amiibo. Anything already logged as Sword Kirby moves to pink Kirby with the box ticked; older backups are converted the same way when restored.
+
 ## [0.1.0] - 2026-11-08
 
 The first public release.

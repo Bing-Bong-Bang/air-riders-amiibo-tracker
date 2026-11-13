@@ -22,9 +22,10 @@ interface ProfileDraft {
   trainingGoal: string;
   notes: string;
   isBaseline: boolean;
+  swordKirby: boolean;
 }
 
-function ProfileFields({ d, set, idPrefix }: { d: ProfileDraft; set: (d: ProfileDraft) => void; idPrefix: string }) {
+function ProfileFields({ d, set, idPrefix, isKirby }: { d: ProfileDraft; set: (d: ProfileDraft) => void; idPrefix: string; isKirby: boolean }) {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -35,6 +36,16 @@ function ProfileFields({ d, set, idPrefix }: { d: ProfileDraft; set: (d: Profile
           <TextInput id={`${idPrefix}-personality`} value={d.personality} onChange={e => set({ ...d, personality: e.target.value })} />
         </Field>
       </div>
+      {isKirby && (
+        <div className="rounded-xl border border-night-700 p-3">
+          <Checkbox
+            checked={d.swordKirby}
+            onChange={v => set({ ...d, swordKirby: v })}
+            label="Sword Kirby figure"
+            hint="It races exactly like a Kirby amiibo, just with a hat, so its results count as that Kirby color. Pick the color it's set to in-game as the rider."
+          />
+        </div>
+      )}
       <div className="rounded-xl border border-night-700 p-3">
         <Checkbox
           checked={d.isBaseline}
@@ -59,7 +70,8 @@ function ProfileFields({ d, set, idPrefix }: { d: ProfileDraft; set: (d: Profile
 
 function NewProfileForm({ ref_, onDone }: { ref_: Reference; onDone: () => void }) {
   const [riderId, setRiderId] = useState("");
-  const [d, setD] = useState<ProfileDraft>({ nickname: "", personality: "", trainingGoal: "", notes: "", isBaseline: false });
+  const [d, setD] = useState<ProfileDraft>({ nickname: "", personality: "", trainingGoal: "", notes: "", isBaseline: false, swordKirby: false });
+  const isKirby = ref_.riderById.get(riderId)?.characterGroup === "Kirby";
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
 
@@ -70,7 +82,7 @@ function NewProfileForm({ ref_, onDone }: { ref_: Reference; onDone: () => void 
     if (!d.nickname.trim()) return setError(new Error("Give the amiibo its in-game name."));
     setBusy(true);
     try {
-      await createProfile({ riderId, ...d });
+      await createProfile({ riderId, ...d, swordKirby: isKirby && d.swordKirby });
       onDone();
     } catch (err) {
       setError(err);
@@ -90,7 +102,7 @@ function NewProfileForm({ ref_, onDone }: { ref_: Reference; onDone: () => void 
             {ref_.riders.map(r => <option key={r.id} value={r.id}>{r.name}{r.amiiboFigure === "Kirby" && r.description ? ` · ${r.description}` : ""}</option>)}
           </Select>
         </Field>
-        <ProfileFields d={d} set={setD} idPrefix="np" />
+        <ProfileFields d={d} set={setD} idPrefix="np" isKirby={isKirby} />
         <SaveErrorNotice error={error} />
         <div className="flex gap-2">
           <Button type="submit" variant="primary" disabled={busy}>{busy ? "Saving…" : "Save amiibo"}</Button>
@@ -105,10 +117,10 @@ function NewProfileForm({ ref_, onDone }: { ref_: Reference; onDone: () => void 
 // One amiibo
 // -------------------------------------------------------------
 
-function EditProfileForm({ profile, latest, onDone }: { profile: FigurePlayerProfile; latest: FigurePlayerSnapshot | undefined; onDone: () => void }) {
+function EditProfileForm({ profile, latest, isKirby, onDone }: { profile: FigurePlayerProfile; latest: FigurePlayerSnapshot | undefined; isKirby: boolean; onDone: () => void }) {
   const [d, setD] = useState<ProfileDraft>({
     nickname: profile.nickname, personality: profile.personality ?? "", trainingGoal: profile.trainingGoal ?? "", notes: profile.notes ?? "",
-    isBaseline: !!profile.isBaseline,
+    isBaseline: !!profile.isBaseline, swordKirby: !!profile.swordKirby,
   });
   const [startVersion, setStartVersion] = useState(true);
   const [error, setError] = useState<unknown>(null);
@@ -124,7 +136,7 @@ function EditProfileForm({ profile, latest, onDone }: { profile: FigurePlayerPro
     setError(null);
     const change = `Retrained: personality ${before.trim() || "not set"} → ${d.personality.trim() || "not set"}`;
     try {
-      await updateProfile(profile.id, d, personalityChanged && startVersion ? { trainingSinceLast: change } : undefined);
+      await updateProfile(profile.id, { ...d, swordKirby: isKirby && d.swordKirby }, personalityChanged && startVersion ? { trainingSinceLast: change } : undefined);
       onDone();
     } catch (err) {
       setError(err);
@@ -134,7 +146,7 @@ function EditProfileForm({ profile, latest, onDone }: { profile: FigurePlayerPro
   };
   return (
     <form onSubmit={submit} className="mt-4 space-y-4 rounded-xl border border-night-700 p-4">
-      <ProfileFields d={d} set={setD} idPrefix={`ep-${profile.id}`} />
+      <ProfileFields d={d} set={setD} idPrefix={`ep-${profile.id}`} isKirby={isKirby} />
       {personalityChanged && (
         <div className="rounded-xl border border-star-400/30 bg-star-400/5 p-3">
           <Checkbox
@@ -208,7 +220,7 @@ function ProfileCard({ profile, ref_, raceCounts }: {
             <Link to="stats" params={{ profile: profile.id }} className="hover:text-air-400" title={`Open ${profile.nickname}'s stats`}>{profile.nickname}</Link>
           </h2>
           <p className="text-sm text-night-300">
-            {rider?.name ?? "Unknown rider"} · <Link to="stats" params={{ profile: profile.id }} className="text-air-400 hover:underline">View stats →</Link>
+            {rider?.name ?? "Unknown rider"}{profile.swordKirby && " · Sword Kirby figure"} · <Link to="stats" params={{ profile: profile.id }} className="text-air-400 hover:underline">View stats →</Link>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -243,7 +255,7 @@ function ProfileCard({ profile, ref_, raceCounts }: {
       </div>
       <div className="mt-3"><SaveErrorNotice error={error} /></div>
 
-      {panel === "edit" && <EditProfileForm profile={profile} latest={latest} onDone={() => setPanel("none")} />}
+      {panel === "edit" && <EditProfileForm profile={profile} latest={latest} isKirby={rider?.characterGroup === "Kirby"} onDone={() => setPanel("none")} />}
       {panel === "retire" && !retired && (
         <RetireConfirm profile={profile} totalRaces={raceCounts.air_ride + raceCounts.top_ride} onCancel={() => setPanel("none")} />
       )}

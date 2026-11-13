@@ -12,7 +12,7 @@ How to use every part of Air Riders Stat Tracker. For what the app is and how to
 ## Getting started
 
 1. **Pick a mode** with the switch at the top right: *Air Ride*, *Top Ride* or *City Trial*. Each mode has its own pages and its own data. *Amiibo* and *Data* are shared by all three.
-2. **Add your amiibo** on the **Amiibo** page: pick the rider (for Kirby, the color, which sets its special), then enter its in-game name and personality.
+2. **Add your amiibo** on the **Amiibo** page: pick the rider (for Kirby, the color, which sets its special), then enter its in-game name and personality. For the Sword Kirby figure, pick its Kirby color and tick *Sword Kirby figure*: it races exactly like a Kirby amiibo.
 3. **Set up a save file** on the **Data** page (recommended): *Choose save file…*, then pick somewhere like `Documents/air-riders-data.json`. Every change is written there automatically.
 4. **Log races** (Air Ride / Top Ride) or **matches** (City Trial). The overview pages fill in as data arrives, and say what unlocks each section.
 
@@ -72,7 +72,7 @@ The session page shows that batch's own stats, grouped by amiibo + machine and b
 
 Characters, machines, combos, your amiibo and courses, each ranked by **adjusted pace** within one format, with the course and partner held equal (see [the numbers](#the-numbers-explained)).
 
-- **Kirby** is one row; click it to open its four colors. Sword Kirby is its own character.
+- **Kirby** is one row; click it to open its four colors. A Sword Kirby figure counts as the Kirby color it's set to.
 - **Columns:** Pace (% and seconds per course), a bar from the average line (green right = faster, red left = slower), Races, Spread and Confidence.
 - **Click any column heading** to sort; click again to flip.
 - **Details** adds the full-run time, Simple pace (plain average), what's been tried, disasters, and strongest/weakest course. With one course selected, it shows each row's best and worst time there.

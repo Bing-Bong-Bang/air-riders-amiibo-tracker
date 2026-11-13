@@ -154,7 +154,7 @@ export interface Rider extends BaseRecord {
   name: string;                 // "Kirby (Snow Bowl)"
   /**
    * Groups variants for roll-up views. The four Kirby colors share
-   * characterGroup "Kirby"; everyone else (Sword Kirby too) is their own group.
+   * characterGroup "Kirby"; everyone else is their own group.
    */
   characterGroup: string;
   hasAmiibo: boolean;
@@ -251,6 +251,12 @@ export interface FigurePlayerProfile extends BaseRecord {
    * Best picks unless asked for.
    */
   isBaseline?: boolean;
+  /**
+   * Scanned from the Sword Kirby figure. It plays exactly like a Kirby
+   * amiibo of the same color (it just wears a hat), so it's a label only:
+   * stats treat it as that Kirby.
+   */
+  swordKirby?: boolean;
   /**
    * Machine proficiency, 0–100, by City Trial machine id. Missing
    * machines (or no map at all) are maxed at 100.
@@ -1630,11 +1636,11 @@ export function runSummary(format: Format, races: Race[]) {
 // =============================================================
 /**
  * The Kirby figure races in four colors, each with its own special, so
- * each special is tracked as its own rider. Sword Kirby is a separate figure.
+ * each special is tracked as its own rider. The Sword Kirby figure plays
+ * exactly like a Kirby amiibo, so it's a profile checkbox, not a rider.
  */
 export const SEED_RIDERS: Pick<Rider, "name" | "characterGroup" | "hasAmiibo" | "description" | "amiiboFigure">[] = [
   { name: "Kirby (Ultra Sword)", characterGroup: "Kirby", hasAmiibo: true, amiiboFigure: "Kirby", description: "Pink" },
-  { name: "Sword Kirby",         characterGroup: "Sword Kirby", hasAmiibo: true, amiiboFigure: "Sword Kirby", description: "Separate figure; special not known yet" },
   { name: "Kirby (Crash)",       characterGroup: "Kirby", hasAmiibo: true, amiiboFigure: "Kirby", description: "Yellow or Green" },
   { name: "Kirby (Snow Bowl)",   characterGroup: "Kirby", hasAmiibo: true, amiiboFigure: "Kirby", description: "Blue or Gray" },
   { name: "Kirby (Burn)",        characterGroup: "Kirby", hasAmiibo: true, amiiboFigure: "Kirby", description: "Red or Purple" },

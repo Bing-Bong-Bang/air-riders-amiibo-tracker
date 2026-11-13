@@ -199,7 +199,7 @@ export async function ensureSeeded(): Promise<boolean> {
     }
     // Kirby specials: rename the original Kirby riders in place (same ids, so every race keeps its rider).
     const RIDER_UPGRADES: Record<string, string> = {
-      "Kirby": "Kirby (Ultra Sword)", "Blast Kirby": "Kirby (Crash)", "Ice Kirby": "Kirby (Snow Bowl)", "Fire Kirby": "Kirby (Burn)", "Sword Kirby": "Sword Kirby",
+      "Kirby": "Kirby (Ultra Sword)", "Blast Kirby": "Kirby (Crash)", "Ice Kirby": "Kirby (Snow Bowl)", "Fire Kirby": "Kirby (Burn)",
     };
     const seedByName = new Map(SEED_RIDERS.map(r => [r.name, r]));
     for (const rider of await tx.getAll("riders")) {
@@ -209,13 +209,15 @@ export async function ensureSeeded(): Promise<boolean> {
       await tx.put("riders", {
         ...rider,
         name: target.name,
-        characterGroup: target.characterGroup, // Sword Kirby is its own character, not one of the Kirby colors
+        characterGroup: target.characterGroup,
         hasAmiibo: target.hasAmiibo,
         description: target.description,
         amiiboFigure: target.amiiboFigure ?? target.name,
         updatedAt: nowIso(),
       });
     }
+
+    await mergeSwordKirby(tx);
 
     // Game version tracking: settings get the current version, older races are assumed to be on it.
     const settings = await tx.get("settings", "settings");
@@ -291,6 +293,42 @@ export async function resetToSeed(): Promise<void> {
  * choice becomes its own "counts in records" box. Glitched races in a
  * no-glitch format, which trials never kept, stay out. Safe to run twice.
  */
+/**
+ * Sword Kirby used to be its own rider. The figure plays exactly like a
+ * Kirby amiibo (it only adds a hat), so it's now a checkbox on a Kirby
+ * profile. Anything recorded as Sword Kirby moves to pink Kirby (the
+ * default color) with the checkbox ticked, then the old rider is removed.
+ * Returns how many profiles were moved. Safe to run more than once.
+ */
+export async function mergeSwordKirby(tx: WriteTx): Promise<number> {
+  const riders = await tx.getAll("riders");
+  const sword = riders.find(r => r.name === "Sword Kirby" || r.characterGroup === "Sword Kirby");
+  const pink = riders.find(r => r.name === "Kirby (Ultra Sword)");
+  if (!sword || !pink) return 0;
+  const at = nowIso();
+  // Every rider reference, anywhere in a record (profiles, race entries, CPU rules, City Trial entries…).
+  const remap = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(remap);
+    if (v && typeof v === "object") {
+      return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, k === "riderId" && x === sword.id ? pink.id : remap(x)]));
+    }
+    return v;
+  };
+  let moved = 0;
+  for (const store of DATA_STORE_NAMES) {
+    if (store === "riders" || store === "settings") continue;
+    for (const rec of await tx.getAll(store)) {
+      const json = JSON.stringify(rec);
+      if (!json.includes(`"${sword.id}"`)) continue;
+      const next = remap(rec) as Record<string, unknown>;
+      if (store === "figurePlayerProfiles" && (rec as { riderId?: string }).riderId === sword.id) { next.swordKirby = true; moved++; }
+      if (JSON.stringify(next) !== json) await tx.put(store, { ...next, updatedAt: at } as never);
+    }
+  }
+  await tx.delete("riders", sword.id);
+  return moved;
+}
+
 export async function migrateTrialsToSessions(tx: WriteTx): Promise<number> {
   const trials = await tx.getAll("testSets");
   if (!trials.length) return 0;

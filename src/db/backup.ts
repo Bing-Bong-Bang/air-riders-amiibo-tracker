@@ -14,7 +14,7 @@ import { nowIso } from "../lib/ids";
 import { DATA_STORE_NAMES, getAll, getById, runWrite } from "./database";
 import type { DataStoreName } from "./database";
 import { checkIntegrity } from "./integrity";
-import { buildCtSeedFormats, migrateTrialsToSessions } from "./seed";
+import { buildCtSeedFormats, mergeSwordKirby, migrateTrialsToSessions } from "./seed";
 import type { Dataset } from "./integrity";
 import { describeIssues, exportFileSchema } from "./validation";
 
@@ -134,6 +134,8 @@ export async function replaceAllData(file: ExportFile): Promise<void> {
     }
     // Older backups may still hold trials; they load as sessions.
     await migrateTrialsToSessions(tx);
+    // Older backups may have Sword Kirby as its own rider.
+    await mergeSwordKirby(tx);
     // Files from before City Trial have no City Trial formats: start them off.
     if (!file.data.ctFormats.length) await tx.putMany("ctFormats", buildCtSeedFormats());
   });
