@@ -32,6 +32,8 @@ How to use every part of Air Riders Stat Tracker. For what the app is and how to
 
 A **format** is a ruleset. Results only ever compare within one format, and a format's rules lock once it has races (use *Duplicate* for variations).
 
+**Points and Grand Prix scoring** can be set any time, even after a format has races, because they only change how results are scored. Tick *Grand Prix scoring* to set races per Grand Prix, how much the final race is worth (×2 = double points) and, optionally, the courses the final is always on. For example, a 4-racer Grand Prix gives 60 / 48 / 40 / 34, and the final race doubles that.
+
 Each mode starts with:
 
 - **Default rules:** the game's defaults.
@@ -81,6 +83,7 @@ Characters, machines, combos, your amiibo and courses, each ranked by **adjusted
   - **Stages:** every course's best, worst, noise and best combo.
   - **Coverage:** race counts per course × character or machine.
   - **Head to head:** wins–losses when two of your racers shared a race. Multi-racer formats only.
+  - **Grand Prix:** each amiibo + machine ranked by the points it can expect over a Grand Prix, with Legendary machines (Dragoon, Hydra) and regular machines in separate tables, like tournament pools. Shows points per race, points on the final courses, wins, average place and retire rate. Needs *Points per place* in the format.
 
 Click a **course** or **machine** for its own page.
 

@@ -101,6 +101,13 @@ export type RunStructure =
       machineMayChange: boolean;
     };
 
+export interface GrandPrixScoring {
+  races: number;                // 3–9 in the game
+  finalMultiplier: number;      // e.g. 2 = the final race's points are doubled
+  /** Courses the final race is always on (e.g. Mount Amberfalls, Galactic Nova). Empty = any course. */
+  finalStageIds?: ID[];
+}
+
 export interface Format extends BaseRecord {
   mode: TrackedMode;
   name: string;                 // "Solo amiibo — All Courses IGT"
@@ -126,6 +133,12 @@ export interface Format extends BaseRecord {
   runStructure: RunStructure;
   /** Points by placement index (0 = 1st). Placement scoring only. */
   pointsTable?: number[];
+  /**
+   * Scoring for the game's Grand Prix: several races, points added up,
+   * the final race worth more. Scoring only (not a game rule), so it can
+   * be changed after the format has races. Needs a points table.
+   */
+  grandPrix?: GrandPrixScoring;
   /**
    * What "best" means when this format drives recommendations:
    *  - mean_time  → lowest average (summed-time speedruns)
@@ -918,7 +931,7 @@ function median(values: number[]): number {
 }
 
 /** Small seeded RNG so the same data always gives the same interval. */
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   return () => {
     seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
     let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);

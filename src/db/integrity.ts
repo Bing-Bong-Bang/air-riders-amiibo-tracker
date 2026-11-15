@@ -90,6 +90,13 @@ export function checkFormat(f: Format, L: Lookups): string[] {
   if (f.scoring === "placement" && f.pointsTable && f.pointsTable.length > (f.settings.numberOfRiders ?? maxRidersFor(f.mode))) {
     add(`${name}: the points table has more places than riders in the race.`);
   }
+  if (f.grandPrix) {
+    if (f.scoring !== "placement" || !f.pointsTable?.length) add(`${name}: Grand Prix scoring needs points per place.`);
+    for (const sid of f.grandPrix.finalStageIds ?? []) {
+      const st = L.stages.get(sid);
+      if (!st || st.mode !== f.mode) add(`${name}: a Grand Prix final course isn't a ${f.mode === "top_ride" ? "Top Ride" : "Air Ride"} course.`);
+    }
+  }
   if (f.winnerIndexWeights.median === 0 && f.winnerIndexWeights.stdDev === 0) add(`${name}: Winner Index weights can't both be 0.`);
   return problems;
 }

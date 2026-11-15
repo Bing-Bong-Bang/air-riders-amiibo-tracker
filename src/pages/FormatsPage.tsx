@@ -77,6 +77,8 @@ function summary(f: Format): string[] {
   } else if (s.retirement !== null) parts.push(`retirement ${s.retirement ? "on" : "off"}`);
   parts.push(f.scoring === "time" ? "ranked by time" : "ranked by placement");
   if (f.runStructure.kind === "course_set") parts.push(`full run of ${f.runStructure.stageIds.length} courses`);
+  if (f.pointsTable?.length) parts.push(`points ${f.pointsTable.join("/")}`);
+  if (f.grandPrix) parts.push(`Grand Prix of ${f.grandPrix.races}, final ×${f.grandPrix.finalMultiplier}`);
   return parts;
 }
 
@@ -110,7 +112,9 @@ function FormatForm({ initial, ref_, raceCount, onDone }: { initial: FormatDraft
     }
     setBusy(true);
     try {
-      await saveFormat({ ...d, pointsTable: d.scoring === "placement" ? pointsTable : undefined });
+      const grandPrix = d.scoring === "placement" && pointsTable?.length ? d.grandPrix : undefined;
+      if (d.grandPrix && !grandPrix) return setError(new Error("Grand Prix scoring needs points per place."));
+      await saveFormat({ ...d, pointsTable: d.scoring === "placement" ? pointsTable : undefined, grandPrix });
       onDone();
     } catch (err) {
       setError(err);
@@ -310,6 +314,43 @@ function FormatForm({ initial, ref_, raceCount, onDone }: { initial: FormatDraft
               </Field>
             )}
           </div>
+          {d.scoring === "placement" && (
+            <div className="space-y-4 rounded-xl border border-night-700 p-4">
+              <Checkbox
+                checked={!!d.grandPrix}
+                onChange={v => set("grandPrix", v ? { races: 5, finalMultiplier: 2, finalStageIds: [] } : undefined)}
+                label="Grand Prix scoring"
+                hint="Rankings → Grand Prix shows how many points each amiibo can expect over a whole Grand Prix. This is scoring only, so it can be changed any time."
+              />
+              {d.grandPrix && (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Races per Grand Prix" htmlFor={id("gp-races")}>
+                      <NumberInput id={id("gp-races")} min={1} max={20} step={1} value={d.grandPrix.races}
+                        onChange={v => set("grandPrix", { ...d.grandPrix!, races: Math.max(1, Math.round(v ?? 5)) })} />
+                    </Field>
+                    <Field label="Final race points ×" hint="2 = the final race's points are doubled" htmlFor={id("gp-mult")}>
+                      <NumberInput id={id("gp-mult")} min={0.5} max={10} step={0.5} value={d.grandPrix.finalMultiplier}
+                        onChange={v => set("grandPrix", { ...d.grandPrix!, finalMultiplier: v && v > 0 ? v : 1 })} />
+                    </Field>
+                  </div>
+                  <fieldset>
+                    <legend className="text-xs font-semibold uppercase tracking-wider text-night-300">Final race is always on (optional)</legend>
+                    <p className="mt-1 text-xs text-night-400">Tick these and the final uses each amiibo's results on these courses.</p>
+                    <div className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-3">
+                      {ref_.stages.filter(st => st.mode === d.mode).map(st => {
+                        const ids = d.grandPrix!.finalStageIds ?? [];
+                        return (
+                          <Checkbox key={st.id} label={st.name} checked={ids.includes(st.id)}
+                            onChange={v => set("grandPrix", { ...d.grandPrix!, finalStageIds: v ? [...ids, st.id] : ids.filter(x => x !== st.id) })} />
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                </>
+              )}
+            </div>
+          )}
           <details className="rounded-xl border border-night-700 p-4">
             <summary className="cursor-pointer text-sm font-medium text-night-300">Advanced: Winner Index and disasters</summary>
             <div className="mt-4 grid gap-4 sm:grid-cols-3">

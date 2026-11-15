@@ -65,6 +65,11 @@ export const formatSchema: z.ZodType<Format> = z.object({
     }),
   ]),
   pointsTable: z.array(z.number()).max(8).optional(),
+  grandPrix: z.object({
+    races: z.number().int().min(1).max(20),
+    finalMultiplier: z.number().positive().max(10),
+    finalStageIds: z.array(id).optional(),
+  }).optional(),
   objective: z.enum(["mean_time", "pb_chance", "placement"]),
   winnerIndexWeights: z.object({ median: z.number().nonnegative(), stdDev: z.number().nonnegative() }),
   disasterThresholdPct: z.number().positive(),

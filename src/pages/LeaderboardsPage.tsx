@@ -20,8 +20,9 @@ import { Checkbox, Segmented, Select } from "../components/form";
 import { Badge, Card, CardHeader, Notice, Spinner, cx } from "../components/ui";
 import { StagesTable } from "./StagePage";
 import { CoverageMap, HeadToHead } from "./RankingsExtras";
+import { GrandPrixView } from "./GrandPrixView";
 
-type View = "characterGroup" | "machine" | "combo" | "profile" | "stages" | "coverage" | "h2h";
+type View = "characterGroup" | "machine" | "combo" | "profile" | "stages" | "coverage" | "h2h" | "gp";
 
 const VIEWS: { value: View; label: string }[] = [
   { value: "characterGroup", label: "Characters" },
@@ -31,9 +32,10 @@ const VIEWS: { value: View; label: string }[] = [
   { value: "stages", label: "Stages" },
   { value: "coverage", label: "Coverage" },
   { value: "h2h", label: "Head to head" },
+  { value: "gp", label: "Grand Prix" },
 ];
 
-const VIEW_HELP: Record<Exclude<View, "stages" | "coverage" | "h2h">, string> = {
+const VIEW_HELP: Record<Exclude<View, "stages" | "coverage" | "h2h" | "gp">, string> = {
   characterGroup: "Every character with timed results, with the machine and stage held equal. Kirby's four colors are pooled; open Kirby to see each color.",
   machine: "Each machine, with the rider and stage held equal.",
   combo: "Rider + machine pairs. Synergy is how much better (−) or worse (+) a pair does than its rider and machine predict separately.",
@@ -123,14 +125,15 @@ export function LeaderboardsPage() {
   const format = (ref_ && ref_.formatById.get(formatChoice)) ?? auto;
   // One racer per race means nobody ever races anybody: no head to head.
   const solo = !!format && format.trackedSeats === 1 && !format.flexibleSeats;
-  const views = solo ? VIEWS.filter(v => v.value !== "h2h") : VIEWS;
-  const view: View = solo && viewChoice === "h2h" ? "characterGroup" : viewChoice;
+  const views = solo ? VIEWS.filter(v => v.value !== "h2h" && v.value !== "gp") : VIEWS;
+  const view: View = solo && (viewChoice === "h2h" || viewChoice === "gp") ? "characterGroup" : viewChoice;
+  const tableView = !["stages", "coverage", "h2h", "gp"].includes(view);
 
   const result = useMemo(() => {
     if (!ref_ || !core.data || !format) return null;
     const rows = core.data.get(format.id) ?? [];
     const filter = {
-      stageId: ["stages", "coverage", "h2h"].includes(view) ? undefined : stageId || undefined, includeLegendaries: legendaries, latestVersionOnly: latestOnly,
+      stageId: !tableView ? undefined : stageId || undefined, includeLegendaries: legendaries, latestVersionOnly: latestOnly,
       gameVersion: gameVersion || undefined,
       ...scopeFilter(amiiboScope, ref_.profiles),
     };
@@ -141,7 +144,7 @@ export function LeaderboardsPage() {
     const typical = typicalCourseMs(byRider.obs);
     const run = format.runStructure.kind === "course_set" && !filter.stageId ? fullRunMs(byRider.obs, format.runStructure.stageIds) : null;
     const base = { skippedUntimed: byRider.skippedUntimed, typical, run, byRider: byRider.obs };
-    if (view === "stages" || view === "coverage" || view === "h2h") return { ...base, main: [] as LeaderboardRow[], obs: byRider.obs, kind: "rider" as RowKind, details: new Map<string, SubjectDetails>(), byProfile: obsFor("profile").obs, sub: null };
+    if (view === "stages" || view === "coverage" || view === "h2h" || view === "gp") return { ...base, main: [] as LeaderboardRow[], obs: byRider.obs, kind: "rider" as RowKind, details: new Map<string, SubjectDetails>(), byProfile: obsFor("profile").obs, sub: null };
 
     const keyOf = (o: PaceObservation) => (view === "machine" ? o.machine : view === "combo" ? `${o.rider}|${o.machine}` : o.rider);
     const obs = view === "characterGroup" ? obsFor("characterGroup").obs : view === "profile" ? obsFor("profile").obs : byRider.obs;
@@ -156,7 +159,7 @@ export function LeaderboardsPage() {
   }, [ref_, core.data, format, view, stageId, legendaries, latestOnly, gameVersion, amiiboScope]);
 
   const versions = format && core.data ? gameVersionsIn(core.data.get(format.id) ?? []) : [];
-  const h2hRows = view === "h2h" && format && core.data && ref_
+  const h2hRows = (view === "h2h" || view === "gp") && format && core.data && ref_
     ? (core.data.get(format.id) ?? []).filter(r => (!gameVersion || r.race.gameVersion === gameVersion)
       && inScope(amiiboScope, new Set(ref_.profiles.filter(p => p.isBaseline).map(p => p.id)), r))
     : [];
@@ -333,7 +336,7 @@ export function LeaderboardsPage() {
               {formats.map(f => <option key={f.id} value={f.id}>{f.name}{f.id === recordId ? " ★" : ""} ({timedCount(f)} timed)</option>)}
             </Select>
           </label>
-          {(view !== "stages" && view !== "coverage" && view !== "h2h") && (
+          {tableView && (
             <label className="space-y-1.5">
               <span className="block text-xs font-semibold uppercase tracking-wider text-night-300">Stage</span>
               <Select aria-label="Stage" className="w-auto min-w-52" value={stageId} onChange={e => setStageId(e.target.value)}>
@@ -359,7 +362,7 @@ export function LeaderboardsPage() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Segmented label="Rank" value={view} onChange={setView} options={views} />
-          {!["stages", "coverage", "h2h"].includes(view) && <Checkbox checked={details} onChange={setDetails} label="Details" />}
+          {tableView && <Checkbox checked={details} onChange={setDetails} label="Details" />}
         </div>
       </Card>
 
@@ -371,6 +374,9 @@ export function LeaderboardsPage() {
         <CoverageMap format={format} ref_={ref_} obs={result?.byRider ?? []} />
       ) : view === "h2h" ? (
         <HeadToHead format={format} ref_={ref_} rows={h2hRows} />
+      ) : view === "gp" ? (
+        <GrandPrixView format={format} ref_={ref_} minSample={ref_.settings?.minSample ?? 5}
+          rows={legendaries ? h2hRows : h2hRows.filter(r => !ref_.machineById.get(r.entry.machineId)?.isLegendary)} />
       ) : rows.length === 0 ? (
         <Notice title="Nothing to rank yet">
           Leaderboards use finish times from counted races in "{format.name}"{stageId ? " on this stage" : ""}.
