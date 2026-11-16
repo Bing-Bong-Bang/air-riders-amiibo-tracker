@@ -47,7 +47,7 @@ Each mode starts with:
 
 **Log race:** pick format, course, amiibo and machine, type the time (`01:25.72`, `1:25.72` or `012572`) and press Enter. The setup stays, so the next race is just another time and Enter.
 
-- **Places:** in multi-racer formats, set *Riders in this race* (CPUs included) and each racer's place.
+- **Places:** in multi-racer formats, set *Riders in this race* (CPUs included) and each racer's place. Ties work like the game: two tied for 1st are 1st, 1st, 3rd; two tied for 3rd are 1st, 2nd, 3rd, 3rd.
 - **Retired:** tick it for a racer that dropped out. It only appears in formats where retiring is possible.
 - **Counts in records** is on by default. Untick it for a race you want to keep but not trust; it stays in its session and in Races, but rankings, records and Sum of Best ignore it.
 

@@ -8,6 +8,7 @@ All notable changes are listed here. Versions follow [semantic versioning](https
 - **Grand Prix rankings.** Formats can have *Grand Prix scoring*: races per Grand Prix, a bonus for the final race and the courses it's always on. Rankings → *Grand Prix* ranks each amiibo + machine by expected Grand Prix points, with likely ranges, rank brackets and confidence, and keeps Legendary machines and regular machines in separate tables like tournament pools. Points and Grand Prix scoring can be changed even after a format has races.
 
 ### Changed
+- **Tied places can be logged in races** (1st, 1st, 3rd or 1st, 2nd, 3rd, 3rd), as the game allows. A tie skips the places it covers, so 1st, 1st, 2nd is refused with a short explanation.
 - **Sword Kirby is no longer a separate character.** The released figure races exactly like a Kirby amiibo (it just adds a hat), so it's now a *Sword Kirby figure* checkbox on Kirby amiibo. Anything already logged as Sword Kirby moves to pink Kirby with the box ticked; older backups are converted the same way when restored.
 - **One Kirby in the amiibo form.** The rider list shows a single *Kirby*; its color (Pink, Yellow, Green, Blue, Gray, Red or Purple, each with its special) and the *Sword Kirby figure* box sit right below. The exact color is remembered, and can be switched later between the two colors that share a special.
 

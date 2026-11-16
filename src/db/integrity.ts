@@ -187,7 +187,7 @@ export function checkRace(race: Race, L: Lookups, where = `Race ${race.id.slice(
   if (race.riderCount !== undefined && race.entries.length > race.riderCount) add(`${where}: more racers logged than riders in the race.`);
   if ((race.riderCount ?? race.entries.length) > maxRidersFor(f.mode)) add(`${where}: more riders than a ${f.mode === "top_ride" ? "Top Ride" : "Air Ride"} race holds.`);
 
-  const placements = new Set<number>();
+  const placeCounts = new Map<number, number>();
   const racerKeys = new Set<string>();
   race.entries.forEach((e, i) => {
     const who = race.entries.length > 1 ? `${where}, racer ${i + 1}` : where;
@@ -202,8 +202,7 @@ export function checkRace(race: Race, L: Lookups, where = `Race ${race.id.slice(
 
     if (f.scoring === "placement" && e.placement === undefined && e.status === "finished") add(`${who}: placement is missing.`);
     if (e.placement !== undefined) {
-      if (placements.has(e.placement)) add(`${where}: two racers share placement ${e.placement}.`);
-      placements.add(e.placement);
+      placeCounts.set(e.placement, (placeCounts.get(e.placement) ?? 0) + 1);
       if (e.placement > ridersInRace) add(`${who}: placement ${e.placement} is beyond the ${ridersInRace} riders in the race.`);
     }
     // A placed racer may skip its time (e.g. only your main amiibo was timed); otherwise time formats need one.
@@ -226,10 +225,20 @@ export function checkRace(race: Race, L: Lookups, where = `Race ${race.id.slice(
     }
   });
 
+  // Ties share a place and skip the places they cover, like the game: 1st, 1st, 3rd or 1st, 2nd, 3rd, 3rd.
+  for (const [place, n] of placeCounts) {
+    if (n < 2) continue;
+    const skipped = [...placeCounts.keys()].find(q => q > place && q < place + n);
+    if (skipped !== undefined) {
+      add(`${where}: ${n} racers tied for ${ordinalPlace(place)}, so the next place is ${ordinalPlace(place + n)}, not ${ordinalPlace(skipped)}.`);
+    }
+  }
+
   const finished = race.entries
     .filter(e => e.status === "finished" && e.finishTimeMs !== null && e.placement !== undefined)
     .sort((a, b) => (a.placement as number) - (b.placement as number));
   for (let i = 1; i < finished.length; i++) {
+    if (finished[i].placement === finished[i - 1].placement) continue; // tied: times can differ by a hair
     if (Number(finished[i].finishTimeMs) < Number(finished[i - 1].finishTimeMs)) {
       add(`${where}: a lower placement has a faster time.`);
       break;
@@ -346,4 +355,8 @@ export function checkIntegrity(data: Dataset): string[] {
 
   if (problems.length === MAX_PROBLEMS) problems.push("…and possibly more. Fix these first.");
   return problems;
+}
+
+function ordinalPlace(n: number): string {
+  return `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 }

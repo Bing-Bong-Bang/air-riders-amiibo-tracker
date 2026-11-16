@@ -1645,8 +1645,9 @@ export function runSummary(format: Format, races: Race[]) {
 //  - sets in one experiment share formatId
 // Incident tags:
 //  - a stage-specific tag can only be used on races on that stage
-// - placement scoring: placements unique, within 1..settings.numberOfRiders
-//   (gaps allowed, since unlogged CPUs can finish between logged racers)
+// - placement scoring: placements within 1..settings.numberOfRiders; ties
+//   share a place and skip the places they cover (1st, 1st, 3rd); other
+//   gaps are allowed, since unlogged CPUs can finish between logged racers
 // - finished times non-decreasing by placement
 // - firstPlaceTimeMs ≤ every logged finish time
 // - finishTimeMs null unless status "finished"
