@@ -19,6 +19,7 @@ import { useReference } from "../hooks/useReference";
 import type { Reference } from "../hooks/useReference";
 import { modeLabel, useMode } from "../lib/mode";
 import { Link, useLocation } from "../lib/router";
+import { useIncludeLegendaries } from "../lib/legendaries";
 import { Checkbox, Select } from "../components/form";
 import { StatsTable } from "../components/StatsTable";
 import type { ColumnKey } from "../components/StatsTable";
@@ -202,6 +203,7 @@ export function StagePage() {
   const core = useLiveQuery(() => loadCoreRows(mode), [mode], ["races", "testSets", "runs"]);
   const [formatChoice, setFormatChoice] = useState<ID>(params.get("format") ?? "");
   const [amiiboScope, setAmiiboScope] = useState<AmiiboScope>("trained");
+  const [legendaries, setLegendaries] = useIncludeLegendaries();
 
   if (error || core.error) return <Notice tone="bad" title="Couldn't load this stage">{(error ?? core.error)?.message}</Notice>;
   if (loading || core.loading || !ref_ || !core.data) return <Spinner />;
@@ -212,7 +214,7 @@ export function StagePage() {
   const format = ref_.formatById.get(formatChoice) ?? formats[0] ?? ref_.formatById.get(ref_.settings?.recordFormatIds[mode] ?? "");
   const baselineIds = new Set(ref_.profiles.filter(p => p.isBaseline).map(p => p.id));
   const rows: ResultRow[] = (format ? core.data.get(format.id) ?? [] : []).filter(r => r.race.stageId === stageId
-    && inScope(amiiboScope, baselineIds, r));
+    && inScope(amiiboScope, baselineIds, r) && (legendaries || !ref_.machineById.get(r.entry.machineId)?.isLegendary));
   const timed = rows.filter(r => r.entry.status === "finished" && r.entry.finishTimeMs !== null)
     .sort((a, b) => (a.entry.finishTimeMs as Millis) - (b.entry.finishTimeMs as Millis));
   const medians = stageMedians(rows);
@@ -236,7 +238,7 @@ export function StagePage() {
   const triedRiders = new Set(rows.map(r => r.entry.riderId));
   const triedMachines = new Set(rows.map(r => r.entry.machineId));
   const untriedRiders = ref_.riders.filter(r => !triedRiders.has(r.id));
-  const untriedMachines = ref_.machines.filter(m => !triedMachines.has(m.id));
+  const untriedMachines = ref_.machines.filter(m => !triedMachines.has(m.id) && (legendaries || !m.isLegendary));
   const best = timed[0], worst = timed[timed.length - 1];
   const fmtWho = (r: ResultRow) => `${nick(amiiboOf(r))} · ${ref_.machineById.get(r.entry.machineId)?.name ?? "?"} · ${new Date(r.race.racedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
   const median = timed.length ? (timed.length % 2 ? timed[timed.length >> 1].entry.finishTimeMs! : (timed[timed.length / 2 - 1].entry.finishTimeMs! + timed[timed.length / 2].entry.finishTimeMs!) / 2) : null;
@@ -250,6 +252,7 @@ export function StagePage() {
           <p className="mt-1 text-night-300">{modeLabel(stage.mode)}{stage.defaultLaps ? ` · ${stage.defaultLaps} laps by default` : ""}</p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
+          <Checkbox checked={legendaries} onChange={setLegendaries} label="Include Dragoon & Hydra" />
           <AmiiboScopeSelect value={amiiboScope} onChange={setAmiiboScope} show={ref_.profiles.some(p => p.isBaseline)} />
           {format && timed.length > 0 && <CopySummaryButton build={() => buildSummary({
             kind: "stage", title: stage.name, format, rows, allRows: rows, notes: stage.notes,

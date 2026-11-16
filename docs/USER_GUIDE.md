@@ -85,7 +85,7 @@ Characters, machines, combos, your amiibo and courses, each ranked by **adjusted
   - **Head to head:** wins–losses when two of your racers shared a race. Multi-racer formats only.
   - **Grand Prix:** each amiibo + machine ranked by the points it can expect over a Grand Prix, with Legendary machines (Dragoon, Hydra) and regular machines in separate tables, like tournament pools. Shows points per race, points on the final courses, wins, average place and retire rate. Needs *Points per place* in the format.
 
-Click a **course** or **machine** for its own page.
+Click a **course** or **machine** for its own page. *Include Dragoon & Hydra* appears on Rankings, Best picks, course pages and stat pages; turning it off on one turns it off on all of them.
 
 ### Best picks, runs and records
 

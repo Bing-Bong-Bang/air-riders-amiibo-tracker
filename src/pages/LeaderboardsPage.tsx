@@ -16,6 +16,7 @@ import { useReference } from "../hooks/useReference";
 import type { Reference } from "../hooks/useReference";
 import { modeLabel, useMode } from "../lib/mode";
 import { Link, useLocation } from "../lib/router";
+import { useIncludeLegendaries } from "../lib/legendaries";
 import { Checkbox, Segmented, Select } from "../components/form";
 import { Badge, Card, CardHeader, Notice, Spinner, cx } from "../components/ui";
 import { StagesTable } from "./StagePage";
@@ -110,7 +111,7 @@ export function LeaderboardsPage() {
   const { params } = useLocation();
   const [viewChoice, setView] = useState<View>(() => (VIEWS.some(v => v.value === params.get("view")) ? params.get("view") as View : "characterGroup"));
   const [stageId, setStageId] = useState<ID>("");
-  const [legendaries, setLegendaries] = useState(true);
+  const [legendaries, setLegendaries] = useIncludeLegendaries();
   const [gameVersion, setGameVersion] = useState<string>("");
   const [amiiboScope, setAmiiboScope] = useState<AmiiboScope>("trained");
   const [latestOnly, setLatestOnly] = useState(false);

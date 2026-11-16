@@ -16,7 +16,8 @@ import { snapshotLabel, useReference } from "../hooks/useReference";
 import type { Reference } from "../hooks/useReference";
 import { modeLabel, useMode } from "../lib/mode";
 import { Link, navigate, useLocation } from "../lib/router";
-import { Select } from "../components/form";
+import { useIncludeLegendaries } from "../lib/legendaries";
+import { Checkbox, Select } from "../components/form";
 import { OVERALL_COLUMNS, STAGE_COLUMNS, StatsTable, fmtPace, fmtPct, fmtPlace, fmtRetired, retiredColumnIf } from "../components/StatsTable";
 import type { StatsTableRow } from "../components/StatsTable";
 import { Badge, Button, Card, CardHeader, Notice, Spinner, StatTile, cx } from "../components/ui";
@@ -179,6 +180,7 @@ export function StatsPage() {
   const { data: ref_, error, loading } = useReference(mode);
   const core = useLiveQuery(() => loadCoreRows(mode), [mode], ["races", "testSets", "runs"]);
   const [formatChoice, setFormatChoice] = useState<ID>("");
+  const [legendaries, setLegendaries] = useIncludeLegendaries();
 
   if (error || core.error) return <Notice tone="bad" title="Couldn't load stats">{(error ?? core.error)?.message}</Notice>;
   if (loading || core.loading || !ref_ || !core.data) return <Spinner />;
@@ -200,7 +202,7 @@ export function StatsPage() {
   // Default: the format with the most results for this subject, else the default rules.
   const auto = [...formats].sort((a, b) => countFor(b) - countFor(a))[0];
   const format = ref_.formatById.get(formatChoice) ?? (auto && countFor(auto) > 0 ? auto : formats.find(f => f.isDefaultRules) ?? auto);
-  const allRows = format ? core.data.get(format.id) ?? [] : [];
+  const allRows = (format ? core.data.get(format.id) ?? [] : []).filter(r => legendaries || !ref_.machineById.get(r.entry.machineId)?.isLegendary);
   const rows = allRows.filter(matches);
   const amiibo = ref_.profiles.filter(p => p.riderId === rider.id);
 
@@ -250,6 +252,7 @@ export function StatsPage() {
           <Select id="sp-format" className="w-auto min-w-64" value={format?.id ?? ""} onChange={e => setFormatChoice(e.target.value)}>
             {formats.map(f => <option key={f.id} value={f.id}>{f.name} ({countFor(f)})</option>)}
           </Select>
+          <Checkbox checked={legendaries} onChange={setLegendaries} label="Include Dragoon & Hydra" />
           <span className="text-xs text-night-400">Each format is its own dataset. Only races counted in core records are included.</span>
         </div>
       </Card>

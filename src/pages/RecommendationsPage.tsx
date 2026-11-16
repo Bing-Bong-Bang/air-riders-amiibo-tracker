@@ -12,6 +12,7 @@ import { useReference } from "../hooks/useReference";
 import type { Reference } from "../hooks/useReference";
 import { modeLabel, useMode } from "../lib/mode";
 import { Link, navigate } from "../lib/router";
+import { useIncludeLegendaries } from "../lib/legendaries";
 import { Checkbox, Segmented, Select } from "../components/form";
 import { Badge, Button, Card, CardHeader, Notice, Spinner, StarMark, cx } from "../components/ui";
 
@@ -193,7 +194,7 @@ export function RecommendationsPage() {
   const core = useLiveQuery(() => loadCoreRows(mode), [mode], ["races", "testSets", "runs"]);
   const [formatChoice, setFormatChoice] = useState<ID>("");
   const [scope, setScope] = useState<Scope>("profiles");
-  const [legendaries, setLegendaries] = useState(true);
+  const [legendaries, setLegendaries] = useIncludeLegendaries();
   const [gameVersion, setGameVersion] = useState<string>("");
   const [amiiboScope, setAmiiboScope] = useState<AmiiboScope>("trained");
   const [latestOnly, setLatestOnly] = useState(true);
