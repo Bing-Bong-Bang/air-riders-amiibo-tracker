@@ -218,7 +218,7 @@ export function RecommendationsPage() {
     const riders = scope === "profiles"
       ? ref_.profiles.filter(p => p.status === "active" || withData.has(p.id)).map(p => p.id)
       : ref_.riders.map(r => r.id);
-    const machines = ref_.machines.filter(m => legendaries || !m.isLegendary).map(m => m.id);
+    const machines = ref_.machines.filter(m => (legendaries && !format.noLegendaries) || !m.isLegendary).map(m => m.id);
     const recs = buildStageRecommendations(obs, stageIds, riders, machines, minSample);
     const profilesWithData = new Set(profileObs.map(o => o.rider));
     const plans = format.runStructure.kind === "course_set"

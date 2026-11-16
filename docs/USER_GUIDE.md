@@ -32,6 +32,8 @@ How to use every part of Air Riders Stat Tracker. For what the app is and how to
 
 A **format** is a ruleset. Results only ever compare within one format, and a format's rules lock once it has races (use *Duplicate* for variations).
 
+Any format can ban Legendary machines with *No Legendary machines*; Dragoon and Hydra then can't be picked when logging.
+
 **Points and Grand Prix scoring** can be set any time, even after a format has races, because they only change how results are scored. Tick *Grand Prix scoring* to set races per Grand Prix, how much the final race is worth (×2 = double points) and, optionally, the courses the final is always on. For example, a 4-racer Grand Prix gives 60 / 48 / 40 / 34, and the final race doubles that.
 
 Each mode starts with:
@@ -40,7 +42,7 @@ Each mode starts with:
   - **Air Ride:** Normal tempo, 2–6 riders, Laps, default laps, retirement off, assists off, enemies on.
   - **Top Ride:** Normal tempo, 2–8 riders, default laps (4, except Mountain and Nova at 2), items Normal, item restrictions Normal, features All, anti-reverse On, boost assist Weak.
 - **Solo amiibo — All Courses / All Stages (IGT):** the solo world-record category. One amiibo plus one required level 1 Kirby (pink) CPU on Warp Star at maximum handicap; every course once, in any order; times summed; no glitches; video required.
-  - **Air Ride:** boost and special assist off, enemies on.
+  - **Air Ride:** boost and special assist off, enemies on, no Legendary machines (Dragoon, Hydra). Runs with them go in their own category, **Solo amiibo — All Courses, Legendaries (IGT)**, with the same rules otherwise.
   - **Top Ride:** items Off, features Limited, anti-reverse On, boost assist Off.
 
 ### Logging races

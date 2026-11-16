@@ -77,6 +77,7 @@ function summary(f: Format): string[] {
   } else if (s.retirement !== null) parts.push(`retirement ${s.retirement ? "on" : "off"}`);
   parts.push(f.scoring === "time" ? "ranked by time" : "ranked by placement");
   if (f.runStructure.kind === "course_set") parts.push(`full run of ${f.runStructure.stageIds.length} courses`);
+  if (f.noLegendaries) parts.push("no Dragoon or Hydra");
   if (f.pointsTable?.length) parts.push(`points ${f.pointsTable.join("/")}`);
   if (f.grandPrix) parts.push(`Grand Prix of ${f.grandPrix.races}, final ×${f.grandPrix.finalMultiplier}`);
   return parts;
@@ -234,6 +235,13 @@ function FormatForm({ initial, ref_, raceCount, onDone }: { initial: FormatDraft
             onChange={v => set("flexibleSeats", v || undefined)}
             label="The number of amiibo varies race to race"
             hint={`Each race logs 1 to ${d.trackedSeats} amiibo. Can't be used with full runs.`}
+          />
+          <Checkbox
+            checked={!!d.noLegendaries}
+            onChange={v => set("noLegendaries", v || undefined)}
+            disabled={locked}
+            label="No Legendary machines"
+            hint="Dragoon and Hydra can't be picked in this format."
           />
           <Checkbox
             checked={!!d.fillerCpu}

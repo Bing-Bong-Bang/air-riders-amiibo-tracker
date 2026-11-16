@@ -238,7 +238,7 @@ export function StagePage() {
   const triedRiders = new Set(rows.map(r => r.entry.riderId));
   const triedMachines = new Set(rows.map(r => r.entry.machineId));
   const untriedRiders = ref_.riders.filter(r => !triedRiders.has(r.id));
-  const untriedMachines = ref_.machines.filter(m => !triedMachines.has(m.id) && (legendaries || !m.isLegendary));
+  const untriedMachines = ref_.machines.filter(m => !triedMachines.has(m.id) && ((legendaries && !format?.noLegendaries) || !m.isLegendary));
   const best = timed[0], worst = timed[timed.length - 1];
   const fmtWho = (r: ResultRow) => `${nick(amiiboOf(r))} · ${ref_.machineById.get(r.entry.machineId)?.name ?? "?"} · ${new Date(r.race.racedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
   const median = timed.length ? (timed.length % 2 ? timed[timed.length >> 1].entry.finishTimeMs! : (timed[timed.length / 2 - 1].entry.finishTimeMs! + timed[timed.length / 2].entry.finishTimeMs!) / 2) : null;

@@ -193,6 +193,7 @@ export function checkRace(race: Race, L: Lookups, where = `Race ${race.id.slice(
     const who = race.entries.length > 1 ? `${where}, racer ${i + 1}` : where;
     if (!L.riders.has(e.riderId)) add(`${who}: rider doesn't exist.`);
     if (!L.machines.has(e.machineId)) add(`${who}: machine doesn't exist.`);
+    else if (f.noLegendaries && L.machines.get(e.machineId)?.isLegendary) add(`${who}: ${L.machines.get(e.machineId)?.name} is a Legendary machine, which "${f.name}" doesn't allow.`);
     if (!f.allowedRacerKinds.includes(e.racer.kind)) add(`${who}: racer type "${e.racer.kind}" isn't allowed by the format.`);
     checkRacer(who, e.racer, e.riderId, L, add);
 

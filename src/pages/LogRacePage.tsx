@@ -236,7 +236,7 @@ function SeatEditor({ seat, index, total, format, stage, ref_, onChange, timeRef
         <Field label="Machine" htmlFor={`${pid}-machine`}>
           <Select id={`${pid}-machine`} value={seat.machineId} onChange={e => set("machineId", e.target.value)}>
             <option value="">Choose…</option>
-            {ref_.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            {ref_.machines.filter(m => !(format.noLegendaries && m.isLegendary) || m.id === seat.machineId).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
           </Select>
         </Field>
       </div>

@@ -127,6 +127,8 @@ export interface Format extends BaseRecord {
   /** The game's default rule set for this mode (one per mode, seeded). */
   isDefaultRules?: boolean;
   allowedRacerKinds: RacerKind[];          // solo amiibo category: ["amiibo"]
+  /** Rule: Legendary machines (Dragoon, Hydra) can't be used. A rule, so it locks once the format has races. */
+  noLegendaries?: boolean;
   fillerCpu?: FillerCpuSpec;
   scoring: "time" | "placement";           // what ranks a result
   timing: "igt" | "rta";                   // in-game time vs real time
@@ -1695,6 +1697,9 @@ export const SEED_MACHINES: Pick<Machine, "name" | "isLegendary" | "hasAmiibo">[
 export const SOLO_AMIIBO_FORMAT_TEMPLATE = {
   mode: "air_ride" as TrackedMode,
   name: "Solo amiibo — All Courses (IGT)",
+  /** The main category bans Legendary machines; the Legendaries category is its own format. */
+  noLegendaries: true,
+  legendaryName: "Solo amiibo — All Courses, Legendaries (IGT)",
   settings: {
     gameTempo: "normal",
     numberOfRiders: 2,

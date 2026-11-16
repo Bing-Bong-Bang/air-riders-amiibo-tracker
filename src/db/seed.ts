@@ -22,6 +22,7 @@ export const SOLO_AMIIBO_RULES_TEXT = `This run is done in the Race mode in the 
 
 - Your amiibo must be the only rider in this run, including other amiibo and human players. Select "P1" on the bottom right of the character/machine select screen and set your amiibo to P1. One other CPU is allowed, as there is no way to disable them completely. The CPU must be a level 1 Kirby on a Warp Star with the maximum Handicap level of 4.
 - You must use the same amiibo throughout the entire run, but your amiibo can switch machines during the run.
+- No Legendary machines (Dragoon, Hydra). Runs with them go in the Legendaries category.
 - In-game rules must be set as below. Rules not mentioned are up to user discretion. Your video must show your rules for the run to qualify.
   - Game Tempo: Normal
   - No. of Riders: 2
@@ -33,6 +34,12 @@ export const SOLO_AMIIBO_RULES_TEXT = `This run is done in the Race mode in the 
 - IGT category: sum your amiibo's times for each course at the end of the run.
 - Courses can be played in any order, but no course more than once in a single run. Try not to stall during course selection.
 - No glitches/clips on any course. If your amiibo performs one accidentally, the run is forfeit and must be restarted.`;
+
+/** The same rules for the Legendaries category, where Dragoon and Hydra are allowed. */
+export const SOLO_AMIIBO_LEGENDARY_RULES_TEXT = SOLO_AMIIBO_RULES_TEXT.replace(
+  "- No Legendary machines (Dragoon, Hydra). Runs with them go in the Legendaries category.",
+  "- Legendary machines (Dragoon, Hydra) are allowed. Runs without them still go in the main category.",
+);
 
 /** The Top Ride solo category rules, written like the Air Ride ones. */
 export const TOP_RIDE_SOLO_RULES_TEXT = `This run is done in Top Ride.
@@ -108,30 +115,24 @@ export function buildDefaultRulesFormat(mode: TrackedMode, at = nowIso()): Forma
   };
 }
 
-/** Build every seed record. Exported so tests can inspect it. */
-export function buildSeedRecords(at = nowIso()) {
-  const riders: Rider[] = SEED_RIDERS.map((r, i) => ({ ...newRecordBase(at), ...r, amiiboFigure: r.amiiboFigure ?? r.name, sortOrder: i + 1 }));
-  const machines: Machine[] = SEED_MACHINES.map((m, i) => ({ ...newRecordBase(at), ...m, sortOrder: i + 1 }));
-  const modeOrder = new Map<string, number>();
-  const stages: Stage[] = SEED_STAGES.map(s => {
-    const sortOrder = (modeOrder.get(s.mode) ?? 0) + 1;
-    modeOrder.set(s.mode, sortOrder);
-    return { ...newRecordBase(at), ...s, sortOrder, isArchived: false };
-  });
-  const incidentTags: IncidentTag[] = SEED_INCIDENT_TAGS.map(t => ({ ...newRecordBase(at), ...t, isArchived: false }));
-
+/**
+ * The Air Ride solo speedrun format: every course once, times summed.
+ * The main category bans Dragoon and Hydra; `legendary` builds the
+ * Legendaries category, where they're allowed.
+ */
+export function buildAirRideSoloFormat(riders: Rider[], machines: Machine[], stages: Stage[], legendary: boolean, at = nowIso()): Format {
   const t = SOLO_AMIIBO_FORMAT_TEMPLATE;
   const fillerRider = riders.find(r => r.name === t.fillerCpu.riderName);
   const fillerMachine = machines.find(m => m.name === t.fillerCpu.machineName);
-  if (!fillerRider || !fillerMachine) throw new Error("Seed roster is missing the filler CPU's rider or machine.");
-
-  const soloFormat: Format = {
+  if (!fillerRider || !fillerMachine) throw new Error("The roster is missing the filler CPU's rider or machine.");
+  return {
     ...newRecordBase(at),
     mode: "air_ride",
-    name: t.name,
+    name: legendary ? t.legendaryName : t.name,
     settings: { ...t.settings },
     trackedSeats: t.trackedSeats,
     allowedRacerKinds: [...t.allowedRacerKinds],
+    noLegendaries: legendary ? undefined : true,
     fillerCpu: {
       riderId: fillerRider.id,
       machineId: fillerMachine.id,
@@ -150,9 +151,25 @@ export function buildSeedRecords(at = nowIso()) {
     disasterThresholdPct: t.disasterThresholdPct,
     forbidsGlitches: t.forbidsGlitches,
     requiresVideo: t.requiresVideo,
-    description: SOLO_AMIIBO_RULES_TEXT,
+    description: legendary ? SOLO_AMIIBO_LEGENDARY_RULES_TEXT : SOLO_AMIIBO_RULES_TEXT,
     isArchived: false,
   };
+}
+
+/** Build every seed record. Exported so tests can inspect it. */
+export function buildSeedRecords(at = nowIso()) {
+  const riders: Rider[] = SEED_RIDERS.map((r, i) => ({ ...newRecordBase(at), ...r, amiiboFigure: r.amiiboFigure ?? r.name, sortOrder: i + 1 }));
+  const machines: Machine[] = SEED_MACHINES.map((m, i) => ({ ...newRecordBase(at), ...m, sortOrder: i + 1 }));
+  const modeOrder = new Map<string, number>();
+  const stages: Stage[] = SEED_STAGES.map(s => {
+    const sortOrder = (modeOrder.get(s.mode) ?? 0) + 1;
+    modeOrder.set(s.mode, sortOrder);
+    return { ...newRecordBase(at), ...s, sortOrder, isArchived: false };
+  });
+  const incidentTags: IncidentTag[] = SEED_INCIDENT_TAGS.map(t => ({ ...newRecordBase(at), ...t, isArchived: false }));
+
+  const soloFormat = buildAirRideSoloFormat(riders, machines, stages, false, at);
+  const legendarySolo = buildAirRideSoloFormat(riders, machines, stages, true, at);
 
   const topSolo = buildTopRideSoloFormat(riders, machines, stages, at);
   const settings: AppSettings = {
@@ -161,7 +178,7 @@ export function buildSeedRecords(at = nowIso()) {
     recordFormatIds: { air_ride: soloFormat.id, top_ride: topSolo.id },
   };
 
-  const formats = [soloFormat, buildDefaultRulesFormat("air_ride", at), buildDefaultRulesFormat("top_ride", at), topSolo];
+  const formats = [soloFormat, legendarySolo, buildDefaultRulesFormat("air_ride", at), buildDefaultRulesFormat("top_ride", at), topSolo];
   return { riders, machines, stages, incidentTags, formats, settings, ctFormats: buildCtSeedFormats(at) };
 }
 
@@ -273,6 +290,8 @@ export async function ensureSeeded(): Promise<boolean> {
       if (st && !st.recordFormatIds.top_ride) await tx.put("settings", { ...st, recordFormatIds: { ...st.recordFormatIds, top_ride: topSolo.id } });
     }
 
+    await splitLegendarySolo(tx);
+
     // City Trial arrived: give it its starting formats once.
     if ((await tx.getAll("ctFormats")).length === 0) await tx.putMany("ctFormats", buildCtSeedFormats());
     return false;
@@ -357,4 +376,66 @@ export async function migrateTrialsToSessions(tx: WriteTx): Promise<number> {
     await tx.delete("testSets", t.id);
   }
   return trials.length;
+}
+
+/**
+ * The solo speedrun category split in two: the main one bans Dragoon and
+ * Hydra, and a Legendaries category allows them. Once: the Legendaries
+ * format is added, any run or race in the main format that used a
+ * Legendary machine moves to it (its session comes along; a session with
+ * both kinds gets a copy in the new format for the Legendary races), and
+ * the main format gets its new rule. Returns how many races moved.
+ */
+export async function splitLegendarySolo(tx: WriteTx): Promise<number> {
+  const t = SOLO_AMIIBO_FORMAT_TEMPLATE;
+  const formats = await tx.getAll("formats");
+  const main = formats.find(f => f.mode === "air_ride" && f.runStructure.kind === "course_set" && f.name === t.name);
+  if (!main || main.noLegendaries) return 0;
+  const at = nowIso();
+
+  let legendary = formats.find(f => f.mode === "air_ride" && f.runStructure.kind === "course_set" && f.name.startsWith(t.legendaryName));
+  if (!legendary) {
+    legendary = {
+      ...main, ...newRecordBase(at),
+      name: formats.some(f => f.mode === "air_ride" && !f.isArchived && f.name.toLowerCase() === t.legendaryName.toLowerCase()) ? `${t.legendaryName} (game)` : t.legendaryName,
+      noLegendaries: undefined, grandPrix: undefined,
+      description: SOLO_AMIIBO_LEGENDARY_RULES_TEXT, isArchived: false,
+    };
+    await tx.put("formats", legendary);
+  }
+  const legId = legendary.id;
+  const legendaryMachines = new Set((await tx.getAll("machines")).filter(m => m.isLegendary).map(m => m.id));
+  const races = (await tx.getAll("races")).filter(r => r.formatId === main.id);
+  const usesLegendary = (r: (typeof races)[number]) => r.entries.some(e => legendaryMachines.has(e.machineId));
+
+  // A run that used a Legendary machine anywhere belongs to the Legendaries category, all of it.
+  const legRuns = new Set(races.filter(r => r.runId && usesLegendary(r)).map(r => r.runId as string));
+  const moving = races.filter(r => (r.runId && legRuns.has(r.runId)) || usesLegendary(r));
+  const movingIds = new Set(moving.map(r => r.id));
+  for (const run of await tx.getAll("runs")) {
+    if (legRuns.has(run.id)) await tx.put("runs", { ...run, formatId: legId, updatedAt: at });
+  }
+  // Sessions: move whole when every race moves; otherwise copy it for the moving races.
+  const sessionCopy = new Map<string, string>();
+  for (const session of await tx.getAll("sessions")) {
+    if (session.formatId !== main.id) continue;
+    const mine = races.filter(r => r.sessionId === session.id);
+    const moved = mine.filter(r => movingIds.has(r.id));
+    if (!moved.length) continue;
+    if (moved.length === mine.length) {
+      await tx.put("sessions", { ...session, formatId: legId, updatedAt: at });
+    } else {
+      const copy = { ...session, ...newRecordBase(at), name: `${session.name} (Legendaries)`, formatId: legId };
+      await tx.put("sessions", copy);
+      sessionCopy.set(session.id, copy.id);
+    }
+  }
+  for (const race of moving) {
+    await tx.put("races", {
+      ...race, formatId: legId, updatedAt: at,
+      ...(race.sessionId && sessionCopy.has(race.sessionId) ? { sessionId: sessionCopy.get(race.sessionId) } : {}),
+    });
+  }
+  await tx.put("formats", { ...main, noLegendaries: true, description: SOLO_AMIIBO_RULES_TEXT, updatedAt: at });
+  return moving.length;
 }

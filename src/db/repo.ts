@@ -181,7 +181,7 @@ export async function addSnapshot(profileId: ID, input: SnapshotInput): Promise<
 // -------------------------------------------------------------
 
 /** Fields that define a format's rules. Locked once races exist, so old results stay comparable. */
-export const LOCKED_FORMAT_FIELDS = ["mode", "settings", "trackedSeats", "scoring", "timing", "allowedRacerKinds", "fillerCpu"] as const;
+export const LOCKED_FORMAT_FIELDS = ["mode", "settings", "trackedSeats", "scoring", "timing", "allowedRacerKinds", "fillerCpu", "noLegendaries"] as const;
 
 /** Create (no id yet) or update a format. */
 export async function saveFormat(input: Omit<Format, "id" | "createdAt" | "updatedAt"> & { id?: ID }): Promise<Format> {

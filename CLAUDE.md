@@ -21,6 +21,7 @@ The owner is a player, not a programmer. They use the app as a **single HTML fil
 - **Change one thing at a time.** Rankings compare by *adjusted pace*: an additive log-time model (course + rider + machine + course×machine), so nothing gets credit for an easy schedule.
 - **Be honest about uncertainty.** Comparisons show likely ranges and rank brackets (bootstrap, a few hundred reshuffles) and a confidence badge. Never crown a winner the data can't support.
 - **"Counts in records"** (`includeInStats`) on every race/match. Excluded results stay visible in their session and lists but leave rankings, records and Sum of Best.
+- **Two Air Ride speedrun categories:** the main solo format has `noLegendaries` (no Dragoon/Hydra); the Legendaries category is its own format. `splitLegendarySolo` (seed.ts) moved older Legendary races across once.
 - **Game version** is stamped on every result so balance patches don't mix silently.
 - **Baseline (Balanced) amiibo** (`isBaseline`) are a control group. They're out of rankings by default; the "Vs baseline" comparison only matches the same course and machine.
 - **City Trial** ranks by **Finish score**: the share of the other riders in the stadium an amiibo finished ahead of, with ties counting half. Two record books stay apart: *Trial* (after a City Trial) and *Stadium* (from the Stadium menu, split by rider count).

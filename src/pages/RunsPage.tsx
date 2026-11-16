@@ -370,7 +370,7 @@ function CourseEntry({ info, format, ref_, remaining }: { info: RunInfo; format:
           <Field label="Machine" htmlFor="rc-machine" hint={lockedMachine ? "Same machine all run" : undefined}>
             <Select id="rc-machine" value={lockedMachine ?? machineId} onChange={e => setMachineId(e.target.value)} disabled={!!lockedMachine}>
               <option value="">Choose…</option>
-              {ref_.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {ref_.machines.filter(m => !(format.noLegendaries && m.isLegendary)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </Select>
           </Field>
           <Field label="Course time (IGT)" htmlFor="rc-time">

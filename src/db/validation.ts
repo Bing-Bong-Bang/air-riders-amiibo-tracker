@@ -65,6 +65,7 @@ export const formatSchema: z.ZodType<Format> = z.object({
     }),
   ]),
   pointsTable: z.array(z.number()).max(8).optional(),
+  noLegendaries: z.boolean().optional(),
   grandPrix: z.object({
     races: z.number().int().min(1).max(20),
     finalMultiplier: z.number().positive().max(10),

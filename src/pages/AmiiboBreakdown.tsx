@@ -121,7 +121,7 @@ export function AmiiboBreakdown({ profileId, format, rows, allRows, ref_ }: {
 
   const machinesTried = new Set(rows.map(r => r.entry.machineId));
   const untriedCourses = courses.filter(c => c.races === 0);
-  const untriedMachines = ref_.machines.filter(m => !machinesTried.has(m.id));
+  const untriedMachines = ref_.machines.filter(m => !machinesTried.has(m.id) && !(format.noLegendaries && m.isLegendary));
   const name = (id: ID) => ref_.stageById.get(id)?.name ?? "?";
   const machine = (id: ID | null) => (id ? ref_.machineById.get(id)?.name ?? "?" : "—");
   const gapToRecord = (c: CourseRow) => (c.medianMs !== null && c.recordMs !== null ? c.medianMs - c.recordMs : null);
