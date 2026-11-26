@@ -2,7 +2,8 @@
 // with what": amiibo + machine. Lineups can change race to race, so groups
 // come from the races themselves rather than a fixed lineup.
 //   - StageInsights: under each stage's table (how sure, drift, vs records, course best).
-//   - MultiCompare: any number of amiibo + machine pairs from sessions in one format, side by side.
+//   - MultiCompare: any number of amiibo + machine pairs, from all races or from
+//     single sessions in one format, side by side.
 
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -204,9 +205,14 @@ type EntryKey = string;
 
 interface Entry { key: EntryKey; session: Session; group: Group; rows: ResultRow[] }
 
+/** The "every race" source: all races in the format that count in records, session or not. */
+const ALL_RACES_ID = "all";
+const ALL_RACES = { id: ALL_RACES_ID, name: "All races" } as Session;
+
 /**
- * Compare any number of amiibo + machine pairs from sessions in one format, stage
- * by stage. `initial` pre-fills entries (e.g. the session you're on).
+ * Compare any number of amiibo + machine pairs in one format, stage by stage,
+ * taken from all counted races or from one session. `initial` pre-fills
+ * entries (e.g. the session you're on).
  * `onChange` lets a page keep the picks in its URL.
  */
 export function MultiCompare({ formatId, ref_, initial, onChange, title = "Compare", subtitle }: {
@@ -222,7 +228,9 @@ export function MultiCompare({ formatId, ref_, initial, onChange, title = "Compa
 
   const bySession = new Map<ID, Race[]>();
   for (const r of racesQ.data ?? []) if (r.sessionId) bySession.set(r.sessionId, [...(bySession.get(r.sessionId) ?? []), r]);
-  const options = (sessionsQ.data ?? []).map(s => ({ s, rows: sessionRows(bySession.get(s.id) ?? []) }))
+  // Every race that counts in records, in or out of a session, as Rankings sees them.
+  const allRows = rowsOf(racesQ.data ?? [], (r, e) => r.includeInStats && e.includeInStats);
+  const options = [{ s: ALL_RACES, rows: allRows }, ...(sessionsQ.data ?? []).map(s => ({ s, rows: sessionRows(bySession.get(s.id) ?? []) }))]
     .map(x => ({ ...x, groups: groupsOf(x.rows) })).filter(x => x.groups.length);
   const lbl = (g: Group) => groupLabel(g, ref_);
 
@@ -245,10 +253,10 @@ export function MultiCompare({ formatId, ref_, initial, onChange, title = "Compa
     <Select aria-label={aria} className="w-full sm:w-[28rem]" value={value} onChange={e => onPick(e.target.value)}>
       {placeholder && <option value="">{placeholder}</option>}
       {options.map(({ s, groups }) => (
-        <optgroup key={s.id} label={s.name}>
+        <optgroup key={s.id} label={s.id === ALL_RACES_ID ? "All races (counted in records)" : `Session: ${s.name}`}>
           {groups.map(g => {
             const k = `${s.id}|${g.profileId}|${g.machineId}`;
-            return <option key={k} value={k} disabled={k !== value && keys.includes(k)}>{s.name} — {lbl(g)}</option>;
+            return <option key={k} value={k} disabled={k !== value && keys.includes(k)}>{s.id === ALL_RACES_ID ? lbl(g) : `${s.name} — ${lbl(g)}`}</option>;
           })}
         </optgroup>
       ))}
@@ -257,9 +265,9 @@ export function MultiCompare({ formatId, ref_, initial, onChange, title = "Compa
 
   return (
     <Card>
-      <CardHeader title={title} subtitle={subtitle ?? "Put as many amiibo + machine pairs from your sessions side by side as you like. Only stages at least two of them raced are compared, since times from different courses can't be compared fairly."} />
+      <CardHeader title={title} subtitle={subtitle ?? "Put as many amiibo + machine pairs side by side as you like, from all your races or from one session. Only courses at least two of them raced are compared, since times from different courses can't be compared fairly."} />
       {options.length === 0 ? (
-        <p className="text-sm text-night-400">No sessions with races in this format yet.</p>
+        <p className="text-sm text-night-400">No races in this format yet.</p>
       ) : (
         <>
           <ol className="space-y-2" aria-label="Compared">

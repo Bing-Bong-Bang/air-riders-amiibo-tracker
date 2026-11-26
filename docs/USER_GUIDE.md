@@ -66,7 +66,7 @@ The session page shows that batch's own stats, grouped by amiibo + machine and b
 - **Vs records:** this session against your other races with the same amiibo, course and machine.
 - **Course best:** the best in your records there, and whether this session beat it.
 
-**Compare** (on a session page, or *Sessions → Compare sessions*) lines up any number of amiibo + machine pairs from any sessions in one format, with a table per course and plain conclusions:
+**Compare** (its own tab, the *Compare* button on an amiibo's stat page, or on a session page) lines up any number of amiibo + machine pairs in one format, taken from **All races** (everything that counts in records, in a session or not) or from a single session, with a table per course and plain conclusions:
 
 - who's fastest, and whether each gap is real or could be luck;
 - who'd win a single race (odds for each);

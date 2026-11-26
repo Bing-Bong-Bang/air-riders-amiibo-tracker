@@ -127,7 +127,7 @@ export function SessionsPage() {
           <p className="mt-1 max-w-3xl text-night-300">A session groups races (a test, a practice night, tournament prep) so you can see that batch's own stats and compare it with others. You log its races on Log race, and choose race by race whether each counts in your records.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {data.data.sessions.length > 0 && <Button onClick={() => navigate("compare")}>Compare sessions</Button>}
+          {data.data.sessions.length > 0 && <Button onClick={() => navigate("compare")}>Compare</Button>}
           {!starting && activeProfiles > 0 && <Button variant="primary" onClick={() => setStarting(true)}>Start a session</Button>}
         </div>
       </div>

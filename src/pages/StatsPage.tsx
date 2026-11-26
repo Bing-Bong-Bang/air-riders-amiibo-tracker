@@ -220,6 +220,12 @@ export function StatsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {profile && format && rows.length > 0 && (
+              <Link to="compare" params={{ format: format.id, pick: `all|${profile.id}|${mostRaced(rows)}` }}
+                className="inline-flex items-center rounded-xl border border-night-700 px-4 py-2 text-sm font-semibold text-night-100 hover:border-night-600 hover:bg-night-850">
+                Compare
+              </Link>
+            )}
             {format && rows.length > 0 && <CopySummaryButton build={() => buildSummary({
               kind: profile ? "profile" : "rider",
               title: profile ? `${profile.nickname} (${rider.name})` : rider.name,
@@ -277,4 +283,11 @@ export function StatsPage() {
       {!profile && <NotesCard store="riders" id={rider.id} notes={rider.notes} what={rider.name} />}
     </div>
   );
+}
+
+/** The machine this amiibo raced most in these rows: the natural first pick to compare. */
+function mostRaced(rows: ResultRow[]): string {
+  const n = new Map<string, number>();
+  for (const r of rows) n.set(r.entry.machineId, (n.get(r.entry.machineId) ?? 0) + 1);
+  return [...n.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
 }

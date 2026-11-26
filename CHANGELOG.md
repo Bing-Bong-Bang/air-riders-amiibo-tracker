@@ -5,6 +5,7 @@ All notable changes are listed here. Versions follow [semantic versioning](https
 ## [Unreleased]
 
 ### Added
+- **Compare tab.** Put any amiibo + machine pairs side by side from *All races* (everything that counts in records, session or not) or from single sessions, course by course with plain conclusions. An amiibo's stat page has a *Compare* button that starts with it.
 - **Grand Prix rankings.** Formats can have *Grand Prix scoring*: races per Grand Prix, a bonus for the final race and the courses it's always on. Rankings → *Grand Prix* ranks each amiibo + machine by expected Grand Prix points, with likely ranges, rank brackets and confidence, and keeps Legendary machines and regular machines in separate tables like tournament pools. Points and Grand Prix scoring can be changed even after a format has races.
 
 ### Changed

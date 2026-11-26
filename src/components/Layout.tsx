@@ -14,6 +14,7 @@ const NAV: { to: Route; label: string; modeAware: boolean }[] = [
   { to: "sessions", label: "Sessions", modeAware: true },
   { to: "runs", label: "Runs", modeAware: true },
   { to: "leaderboards", label: "Rankings", modeAware: true },
+  { to: "compare", label: "Compare", modeAware: true },
   { to: "recommendations", label: "Best picks", modeAware: true },
   { to: "amiibo", label: "Amiibo", modeAware: false },
   { to: "formats", label: "Formats", modeAware: true },
@@ -90,7 +91,7 @@ export function Layout({ children }: { children: ReactNode }) {
   }, [route, area]);
 
   // Sub-pages highlight their parent tab and follow its mode behaviour.
-  const parent: Route = route === "session" || route === "compare" ? "sessions" : route === "run" ? "runs" : route === "stats" ? "roster" : route === "stage" || route === "machine" ? "leaderboards" : route;
+  const parent: Route = route === "session" ? "sessions" : route === "run" ? "runs" : route === "stats" ? "roster" : route === "stage" || route === "machine" ? "leaderboards" : route;
   const modeAware = route === "city" || (NAV.find(n => n.to === parent)?.modeAware ?? false);
   const cityTab = params.get("tab") === "session" ? "sessions" : params.get("tab") ?? "overview";
   const star = area === "city" ? "text-star-400" : mode === "air_ride" ? "text-air-400" : "text-top-400";
