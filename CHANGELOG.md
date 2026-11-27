@@ -5,6 +5,7 @@ All notable changes are listed here. Versions follow [semantic versioning](https
 ## [Unreleased]
 
 ### Added
+- **"Good for competition?" course scores.** Rankings → Stages and every course page show *Better amiibo wins* (does the course reward the better amiibo, or is it a coin flip, checked with a shuffle test) and *Machines competitive* (how many machines are within 2% of the fastest, amiibo held equal). The old "Machine matters" column, which compared each machine's single best amiibo, is replaced.
 - **Is it really steadier?** Compare now says whether one setup's consistency (Spread) is really better or could just be luck, checked by re-running the races a couple of thousand times, the same way it already judges speed.
 - **Compare tab.** Put any amiibo + machine pairs side by side from *All races* (everything that counts in records, session or not) or from single sessions, course by course with plain conclusions. An amiibo's stat page has a *Compare* button that starts with it.
 - **Grand Prix rankings.** Formats can have *Grand Prix scoring*: races per Grand Prix, a bonus for the final race and the courses it's always on. Rankings → *Grand Prix* ranks each amiibo + machine by expected Grand Prix points, with likely ranges, rank brackets and confidence, and keeps Legendary machines and regular machines in separate tables like tournament pools. Points and Grand Prix scoring can be changed even after a format has races.

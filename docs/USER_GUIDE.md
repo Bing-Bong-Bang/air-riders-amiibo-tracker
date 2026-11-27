@@ -82,7 +82,7 @@ Characters, machines, combos, your amiibo and courses, each ranked by **adjusted
 - **Details** adds the full-run time, Simple pace (plain average), what's been tried, disasters, and strongest/weakest course. With one course selected, it shows each row's best and worst time there.
 - **Filters:** course, legendaries, latest amiibo versions, game version, and amiibo scope (trained / baseline / both).
 - **Extra views:**
-  - **Stages:** every course's best, worst, noise and best combo.
+  - **Stages:** every course's best, worst, noise and best combo, plus two "good for competition?" scores: **Better amiibo wins** (on the same machine, how often the better amiibo finishes ahead; 50% is a coin flip, with a Real / Could be luck label) and **Machines competitive** (machines within 2% of the fastest, amiibo held equal). Each course page shows the same two scores in more detail.
   - **Coverage:** race counts per course × character or machine.
   - **Head to head:** wins–losses when two of your racers shared a race. Multi-racer formats only.
   - **Grand Prix:** each amiibo + machine ranked by the points it can expect over a Grand Prix, with Legendary machines (Dragoon, Hydra) and regular machines in separate tables, like tournament pools. Shows points per race, points on the final courses, wins, average place and retire rate. Needs *Points per place* in the format.

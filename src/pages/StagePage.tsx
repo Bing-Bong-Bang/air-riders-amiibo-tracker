@@ -20,6 +20,9 @@ import type { Reference } from "../hooks/useReference";
 import { modeLabel, useMode } from "../lib/mode";
 import { Link, useLocation } from "../lib/router";
 import { useIncludeLegendaries } from "../lib/legendaries";
+import { BALANCE_PCT, courseScores } from "../domain/courseScores";
+import type { CourseScore } from "../domain/courseScores";
+import { BALANCE_HELP, BalanceCell, CourseScoreCard, SKILL_HELP, SkillCell } from "./courseScoreUi";
 import { Checkbox, Select } from "../components/form";
 import { StatsTable } from "../components/StatsTable";
 import type { ColumnKey } from "../components/StatsTable";
@@ -42,7 +45,7 @@ function who(o: PaceObservation, ref_: Reference) {
 // Course facts: short highlights under the Stages table
 // -------------------------------------------------------------
 
-function stageFacts(overview: StageOverview[], total: number, ref_: Reference, name: (id: ID) => string): { label: string; text: ReactNode }[] {
+function stageFacts(overview: StageOverview[], total: number, ref_: Reference, name: (id: ID) => string, scores: Map<ID, CourseScore>): { label: string; text: ReactNode }[] {
   const raced = overview.filter(o => o.races > 0);
   if (!raced.length) return [];
   const facts: { label: string; text: ReactNode }[] = [];
@@ -62,12 +65,17 @@ function stageFacts(overview: StageOverview[], total: number, ref_: Reference, n
     if (least.stageId !== most.stageId) facts.push({ label: "Most consistent", text: <>{b(name(least.stageId))}: only ±{least.noisePct!.toFixed(1)}% race to race</> });
   }
 
-  const gaps = raced.filter(o => o.machineGap);
+  // Machine gaps with the amiibo held equal (the same numbers as "Machines competitive").
+  const gaps = raced.flatMap(o => {
+    const m = scores.get(o.stageId)?.balance?.machines;
+    return m && m.length >= 2 ? [{ stageId: o.stageId, fastest: m[0].machine, next: m[1].machine, gapPct: m[1].gapPct }] : [];
+  });
+  const mName = (id: ID) => ref_.machineById.get(id)?.name;
   if (gaps.length) {
-    const most = by(gaps, o => -o.machineGap!.gapMs)[0];
-    facts.push({ label: "Machine matters most", text: <>{b(name(most.stageId))}: {ref_.machineById.get(most.machineGap!.fastest)?.name} is {secs(most.machineGap!.gapMs)} ahead of the next machine</> });
-    const least = by(gaps, o => o.machineGap!.gapMs)[0];
-    if (least.stageId !== most.stageId) facts.push({ label: "Machine barely matters", text: <>{b(name(least.stageId))}: the top two machines are only {secs(least.machineGap!.gapMs)} apart</> });
+    const most = by(gaps, g => -g.gapPct)[0];
+    facts.push({ label: "Machine matters most", text: <>{b(name(most.stageId))}: {mName(most.fastest)} is {most.gapPct.toFixed(1)}% faster than {mName(most.next)}</> });
+    const least = by(gaps, g => g.gapPct)[0];
+    if (least.stageId !== most.stageId) facts.push({ label: "Machine barely matters", text: <>{b(name(least.stageId))}: {mName(least.fastest)} and {mName(least.next)} are only {least.gapPct.toFixed(1)}% apart</> });
   }
 
   const room = by(raced.filter(o => o.best && o.medianMs && o.races >= 3), o => o.best!.timeMs / o.medianMs! - 1)[0];
@@ -114,10 +122,14 @@ export function StagesTable({ format, ref_, byProfile, byRider }: {
     () => stageOverview(byProfile, stages.map(s => s.id), format.disasterThresholdPct),
     [byProfile, stages, format.disasterThresholdPct],
   );
+  const scores = useMemo(
+    () => new Map(courseScores(byProfile.map(o => ({ stageId: o.stageId, amiibo: o.rider, machine: o.machine, timeMs: o.timeMs })), stages.map(s => s.id)).map(c => [c.stageId, c])),
+    [byProfile, stages],
+  );
   const ridersTried = (stageId: ID) => new Set(byRider.filter(o => o.stageId === stageId).map(o => o.rider)).size;
   const raced = overview.filter(o => o.races > 0);
   const name = (id: ID) => ref_.stageById.get(id)?.name ?? "?";
-  const facts = stageFacts(overview, stages.length, ref_, name);
+  const facts = stageFacts(overview, stages.length, ref_, name, scores);
 
   return (
     <Card>
@@ -137,7 +149,8 @@ export function StagesTable({ format, ref_, byProfile, byRider }: {
               <th className="px-2 py-2 font-medium" title="The amiibo + machine with the fastest median here (2+ races)">Best combo</th>
               <th className="px-2 py-2 text-right font-medium" title="Typical race-to-race spread with the same amiibo and machine. High = needs more races to rank anything.">Noise</th>
               <th className="px-2 py-2 text-right font-medium" title={`Races more than ${format.disasterThresholdPct}% slower than that combo's usual time here`}>Disasters</th>
-              <th className="px-2 py-2 font-medium" title="Gap between the fastest and second-fastest machine here (each with its best amiibo, 2+ races)">Machine matters</th>
+              <th className="px-2 py-2 font-medium" title={SKILL_HELP}>Better amiibo wins</th>
+              <th className="px-2 py-2 font-medium" title={BALANCE_HELP}>Machines competitive</th>
               <th className="py-2 pl-2 text-right font-medium" title="Characters and machines raced here">Tried</th>
             </tr>
           </thead>
@@ -158,9 +171,8 @@ export function StagesTable({ format, ref_, byProfile, byRider }: {
                 </td>
                 <td className="px-2 py-2.5 text-right tabular">{o.noisePct !== null ? `±${o.noisePct.toFixed(1)}%` : "—"}</td>
                 <td className="px-2 py-2.5 text-right tabular">{pct(o.disasterRate)}</td>
-                <td className="px-2 py-2.5 text-xs">
-                  {o.machineGap ? <><span className="text-night-100">{ref_.machineById.get(o.machineGap.fastest)?.name}</span> by {secs(o.machineGap.gapMs)} over {ref_.machineById.get(o.machineGap.second)?.name}</> : "—"}
-                </td>
+                <td className="px-2 py-2.5 whitespace-nowrap">{o.races ? <SkillCell skill={scores.get(o.stageId)?.skill ?? null} /> : "—"}</td>
+                <td className="px-2 py-2.5">{o.races ? <BalanceCell balance={scores.get(o.stageId)?.balance ?? null} ref_={ref_} /> : "—"}</td>
                 <td className="py-2.5 pl-2 text-right text-xs tabular text-night-300">
                   {o.races ? <>{ridersTried(o.stageId)}/{ref_.riders.length} chars · {o.machinesTried}/{ref_.machines.length} machines</> : "not raced"}
                 </td>
@@ -170,6 +182,7 @@ export function StagesTable({ format, ref_, byProfile, byRider }: {
         </table>
       </div>
       <p className="mt-4 text-xs text-night-400">
+        <strong className="text-night-300">Better amiibo wins</strong>: on the same machine, how often the better amiibo finishes ahead (50% = coin flip). <strong className="text-night-300">Machines competitive</strong>: machines within {BALANCE_PCT}% of the fastest, amiibo held equal. Together they say whether a course suits competition.
         Noise and disasters only use amiibo + machine pairs raced at least twice on that course. Best and worst are single races: interesting, but mostly luck, so they don't decide any ranking.
       </p>
       {facts.length > 0 && (
@@ -284,6 +297,10 @@ export function StagePage() {
             <CardHeader title="Your amiibo + machine" subtitle="Fastest median first. Times compare directly because it's all one course." />
             <StatsTable rows={combos} columns={DETAIL_COLUMNS} labelHead="Combo" />
           </Card>
+          <CourseScoreCard ref_={ref_} score={courseScores(
+            timed.filter(r => r.entry.racer.kind === "amiibo").map(r => ({ stageId, amiibo: amiiboOf(r), machine: r.entry.machineId, timeMs: r.entry.finishTimeMs as number })),
+            [stageId],
+          )[0]} />
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader title="Machines here" subtitle="Every amiibo pooled, so a machine raced mostly by a slow amiibo looks slower than it is." />
