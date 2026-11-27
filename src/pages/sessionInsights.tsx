@@ -321,6 +321,24 @@ export function SessionCompare({ session, races, ref_ }: { session: Session; rac
 // One stage, two or more sides: numbers side by side and plain conclusions
 // -------------------------------------------------------------
 
+/**
+ * Is one side really steadier than the other? Re-runs both sides' races a
+ * few thousand times (bootstrap) and checks the range of the spread ratio
+ * (wobblier ÷ steadier). "real": even the low end of that range is above 1.15;
+ * "same": the measured ratio is under 1.15 anyway; else it could be luck.
+ * Spread from a handful of races is itself fuzzy, so this needs both.
+ */
+function spreadVerdict(steadier: Millis[], wobblier: Millis[]): "real" | "same" | "luck" {
+  const ratio = (a: number[], b: number[]) => (sd(b) ?? 0) / Math.max(1, sd(a) ?? 0);
+  if (ratio(steadier, wobblier) < 1.15) return "same";
+  const rnd = seeded(steadier.length * 977 + wobblier.length * 131 + Math.round(steadier[0] ?? 0));
+  const pick = (xs: number[]) => xs.map(() => xs[Math.floor(rnd() * xs.length)]);
+  const rs: number[] = [];
+  for (let k = 0; k < 2000; k++) rs.push(ratio(pick(steadier), pick(wobblier)));
+  rs.sort((a, b) => a - b);
+  return rs[Math.floor(rs.length * 0.05)] > 1.15 ? "real" : "luck";
+}
+
 /** A tiny deterministic random source, so the odds don't flicker between renders. */
 function seeded(seed: number) {
   let x = seed >>> 0 || 1;
@@ -383,11 +401,20 @@ function StageCompare({ stage, sides, threshold }: { stage: string; sides: { nam
   if (spreads.length >= 2) {
     const sorted = [...spreads].sort((a, b) => (a.spread as number) - (b.spread as number));
     const lo = sorted[0], hi = sorted[sorted.length - 1];
-    conclusions.push({
-      text: Number(hi.spread) / Math.max(1, Number(lo.spread)) >= 1.4
-        ? `Most consistent: ${lo.name} (±${secs(lo.spread as number)}); least: ${hi.name} (±${secs(hi.spread as number)}).`
-        : `All about equally consistent (±${secs(lo.spread as number)} to ±${secs(hi.spread as number)}).`,
-    });
+    const range = `±${secs(lo.spread as number)} vs ±${secs(hi.spread as number)}`;
+    const steady = spreadVerdict(lo.times, hi.times);
+    const two = spreads.length === 2;
+    conclusions.push(
+      steady === "same"
+        ? { text: `All about equally consistent (±${secs(lo.spread as number)} to ±${secs(hi.spread as number)}).` }
+        : steady === "real"
+          ? { text: two
+              ? `${lo.name} is steadier than ${hi.name} (${range}), and that's very likely real, not luck.`
+              : `Most consistent: ${lo.name}; least: ${hi.name} (${range}). That gap in steadiness is very likely real.`, tone: "ok" }
+          : { text: two
+              ? `${lo.name} looked steadier (${range}), but with ${lo.n} and ${hi.n} races that could still be luck.`
+              : `Most consistent: ${lo.name}; least: ${hi.name} (${range}), but with this many races that could still be luck.` },
+    );
   }
 
   const bestOf = [...stats].sort((a, b) => a.best - b.best);
